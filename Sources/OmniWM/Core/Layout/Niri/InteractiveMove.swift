@@ -32,6 +32,14 @@ struct MoveConfiguration {
     var liveHoverDelay: TimeInterval = 0.12
     var liveDropSpaceShare: CGFloat = 0.05
     var liveDropSpaceMaximumWidth: CGFloat = 200.0
+    var liveEdgeZoneShare: CGFloat = 0.03
+    var liveEdgeZoneMinimumWidth: CGFloat = 40.0
+    var liveEdgeScrollDelay: TimeInterval = 0.3
+    var liveEdgeScrollSpeed: CGFloat = 1000.0
 
     static let `default` = MoveConfiguration()
+
+    func liveEdgeZoneWidth(forDisplayWidth displayWidth: CGFloat) -> CGFloat {
+        max(displayWidth * liveEdgeZoneShare, liveEdgeZoneMinimumWidth)
+    }
 }
