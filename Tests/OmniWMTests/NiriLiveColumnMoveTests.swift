@@ -923,4 +923,102 @@ final class NiriLiveColumnMoveTests: XCTestCase {
         XCTAssertEqual(fixture.state.viewOffset, original.viewOffset, accuracy: 0.001)
         XCTAssertEqual(fixture.state.activeColumnIndex, original.activeColumnIndex)
     }
+
+    func testEdgeScrollStopsAtTheSameStripEndsAsTheAnchoredScroll() {
+        var fixture = makeFixture()
+        XCTAssertTrue(fixture.begin(2))
+
+        let trailing = fixture.engine.liveEdgeScrollLimit(
+            towardTrailingEdge: true, context: fixture.context, state: fixture.state
+        )
+        let leading = fixture.engine.liveEdgeScrollLimit(
+            towardTrailingEdge: false, context: fixture.context, state: fixture.state
+        )
+
+        fixture.state.jumpOffset(to: trailing ?? fixture.state.viewOffset)
+        XCTAssertEqual(fixture.strip().last?.maxX ?? 0, fixture.frame.maxX - fixture.gap, accuracy: 0.5)
+        XCTAssertNil(fixture.engine.liveEdgeScrollLimit(
+            towardTrailingEdge: true, context: fixture.context, state: fixture.state
+        ))
+
+        fixture.state.jumpOffset(to: leading ?? fixture.state.viewOffset)
+        XCTAssertEqual(fixture.strip().first?.minX ?? 0, fixture.frame.minX + fixture.gap, accuracy: 0.5)
+        XCTAssertNil(fixture.engine.liveEdgeScrollLimit(
+            towardTrailingEdge: false, context: fixture.context, state: fixture.state
+        ))
+    }
+
+    func testEdgeScrollNeverPullsAnOverScrolledStripBack() {
+        var fixture = makeFixture()
+        XCTAssertTrue(fixture.begin(2))
+        let last = fixture.stripColumn(holding: 4)
+        fixture.scrollSoThat(4, startsAt: fixture.frame.maxX - (last.maxX - last.minX) - 200)
+
+        XCTAssertNil(fixture.engine.liveEdgeScrollLimit(
+            towardTrailingEdge: true, context: fixture.context, state: fixture.state
+        ))
+    }
+
+    func testWouldSwapAnswersLikeTheHitTestWithoutChangingTheLayout() {
+        var fixture = makeFixture()
+        XCTAssertTrue(fixture.begin(2))
+        let order = fixture.order()
+        let neighbour = fixture.stripColumn(holding: 3)
+        let emptySpace = fixture.stripColumn(holding: 2)
+
+        XCTAssertTrue(fixture.engine.liveColumnMoveWouldChange(
+            cursor: CGPoint(x: neighbour.midX, y: fixture.midY), context: fixture.context, state: fixture.state
+        ))
+        XCTAssertFalse(fixture.engine.liveColumnMoveWouldChange(
+            cursor: CGPoint(x: emptySpace.midX, y: fixture.midY), context: fixture.context, state: fixture.state
+        ))
+        XCTAssertEqual(fixture.order(), order)
+        XCTAssertEqual(fixture.engine.liveColumnMove?.phase, .dragging)
+    }
+
+    func testWouldSwapIsFalseOverTheCurrentTargetAndTrueOverAnotherColumn() {
+        var fixture = makeFixture(widths: Array(repeating: 1.0 / 3.0, count: 7), activeIndex: 2)
+        fixture.pushHalfOffScreen(2, awayFrom: 3)
+        XCTAssertTrue(fixture.begin(2))
+        XCTAssertEqual(
+            fixture.moveAndSettle(to: CGPoint(x: fixture.stripColumn(holding: 3).midX, y: fixture.midY)),
+            .changed
+        )
+
+        XCTAssertFalse(fixture.engine.liveColumnMoveWouldChange(
+            cursor: CGPoint(x: fixture.stripColumn(holding: 3).midX, y: fixture.midY),
+            context: fixture.context,
+            state: fixture.state
+        ))
+        XCTAssertFalse(fixture.engine.liveColumnMoveWouldChange(
+            cursor: CGPoint(x: fixture.dropSpace()?.midX ?? 0, y: fixture.midY),
+            context: fixture.context,
+            state: fixture.state
+        ))
+        XCTAssertTrue(fixture.engine.liveColumnMoveWouldChange(
+            cursor: CGPoint(x: fixture.stripColumn(holding: 4).midX, y: fixture.midY),
+            context: fixture.context,
+            state: fixture.state
+        ))
+        XCTAssertTrue(fixture.engine.liveColumnMoveWouldChange(
+            cursor: CGPoint(x: fixture.stripColumn(holding: 2).midX, y: fixture.midY),
+            context: fixture.context,
+            state: fixture.state
+        ))
+    }
+
+    func testWouldSwapIsFalseOverATargetTheHomeSpotJustMovedPast() {
+        var fixture = makeFixture(widths: [1.0 / 3.0, 2.0 / 3.0, 1.0 / 3.0], activeIndex: 0)
+        XCTAssertTrue(fixture.begin(0))
+        let cursor = CGPoint(x: fixture.stripColumn(holding: 1).minX + 20, y: fixture.midY)
+        XCTAssertEqual(fixture.moveAndSettle(to: cursor), .changed)
+        XCTAssertNil(fixture.dropSpace())
+        XCTAssertTrue(fixture.stripColumn(holding: 1).contains(x: cursor.x))
+
+        XCTAssertFalse(fixture.engine.liveColumnMoveWouldChange(
+            cursor: cursor,
+            context: fixture.context,
+            state: fixture.state
+        ))
+    }
 }
