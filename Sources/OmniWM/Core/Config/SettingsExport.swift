@@ -119,6 +119,7 @@ struct SettingsExport: Equatable {
         var moveWindowStacksIntoColumn: Bool?
         var allowOverscroll: Bool?
         var overscrollVisibleStripPercent: Int?
+        var naturalWindowDrag: Bool?
     }
 
     struct Dwindle: Codable, Equatable {
@@ -387,7 +388,7 @@ extension SettingsExport.Niri {
             moveWindowStacksIntoColumn: true,
             allowOverscroll: false,
             overscrollVisibleStripPercent: 5
-        )
+        ).withNaturalWindowDragDefaults()
     }
 }
 
