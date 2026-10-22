@@ -108,6 +108,9 @@ extension MouseEventHandler {
             discardNativeTitleBarDragState()
             return
         }
+        let finishedLiveDrag = drag.liveDrag && finishLiveColumnDrag(token: drag.token)
+        var releasedDrag = drag
+        releasedDrag.liveDrag = false
 
         drag.pendingExcludedCorrection = excludedFrameWrite
         state.nativeTitleBarDrag = drag
@@ -118,10 +121,10 @@ extension MouseEventHandler {
             receivedFrameChange: drag.receivedFrameChange
         )
         settleReleasedNativeTitleBarDrag(
-            drag,
+            releasedDrag,
             entry: entry,
             observedFrame: observedFrame,
-            needsCorrection: excludedFrameWrite || observedDisplacement
+            needsCorrection: finishedLiveDrag || excludedFrameWrite || observedDisplacement
         )
     }
 
@@ -260,6 +263,8 @@ extension MouseEventHandler {
 
     func discardNativeTitleBarDragState() {
         state.nativeCrossDisplayMove = nil
+        cancelLiveColumnDrag()
+        state.liveDragLocation = nil
         state.awaitsNativeTitleBarDragTarget = false
         state.nativeTitleBarDragFallbackToken = nil
         state.nativeTitleBarDragFallbackReleased = false

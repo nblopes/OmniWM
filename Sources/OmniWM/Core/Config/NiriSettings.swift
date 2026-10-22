@@ -70,6 +70,10 @@ final class NiriSettings {
         didSet { onChange?() }
     }
 
+    var naturalWindowDrag = NiriSettings.defaults.naturalWindowDrag ?? false {
+        didSet { onChange?() }
+    }
+
     var monitorOverrides: [MonitorNiriSettings] = [] {
         didSet { onChange?() }
     }
@@ -85,7 +89,8 @@ final class NiriSettings {
             defaultContainerPrimarySpan: defaultContainerPrimarySpan,
             edgeGaps: edgeGaps,
             resizeStepPercent: resizeStepPercent,
-            moveWindowStacksIntoColumn: moveWindowStacksIntoColumn
+            moveWindowStacksIntoColumn: moveWindowStacksIntoColumn,
+            naturalWindowDrag: naturalWindowDrag
         )
     }
 
@@ -97,6 +102,7 @@ final class NiriSettings {
         singleWindowFit = niri.singleWindowFit
         edgeGaps = niri.edgeGaps ?? baseline.edgeGaps ?? true
         moveWindowStacksIntoColumn = niri.moveWindowStacksIntoColumn ?? baseline.moveWindowStacksIntoColumn ?? true
+        naturalWindowDrag = niri.naturalWindowDrag ?? baseline.naturalWindowDrag ?? false
         resizeStepPercent = niri.resizeStepPercent ?? baseline.resizeStepPercent ?? BuiltInSettingsDefaults
             .niriResizeStepPercent
         containerPrimarySpanPresets = NiriSettings.validatedContainerPrimarySpanPresets(

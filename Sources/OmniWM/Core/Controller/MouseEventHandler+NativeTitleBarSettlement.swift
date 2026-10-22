@@ -29,6 +29,9 @@ extension MouseEventHandler {
             return false
         case .dragging:
             drag.receivedFrameChange = true
+            if handleLiveColumnDragFrameChange(&drag, entry: entry) {
+                return true
+            }
             if drag.dwindleResizeWorkspaceId != nil
                 || (controller?.settings.gestures.adoptNativeResize == true
                     && controller?.workspaceManager.activeLayoutKind(for: entry.workspaceId) == .dwindle)

@@ -112,7 +112,7 @@ extension MouseEventHandler {
         warpDraggedPointer(at: location)
         controller?.workspaceBarManager.handleAutoHideMouseMoved(at: location)
         beginNativeTitleBarDragIfNeeded(button: button)
-        if !isCapturedInteraction(button), shouldBlockOwnWindowInput(at: location) {
+        if ownWindowInterruptsDrag(button, at: location) {
             cancelActiveMouseInteraction()
             return
         }
@@ -129,6 +129,9 @@ extension MouseEventHandler {
         }
         markNativeTitleBarDragFallbackReleased(button: button, at: location)
         finishNativeTitleBarDragIfNeeded(button: button)
+        if button == .left {
+            runDeferredClickScroll()
+        }
         if !isCapturedInteraction(button), shouldBlockOwnWindowInput(at: location) {
             cancelActiveMouseInteraction()
             return
@@ -335,7 +338,7 @@ extension MouseEventHandler {
         }
         if controller.isOverviewOpen() { return .overview }
         if shouldBlockOwnWindowGestureInput(at: location) { return .ownWindow }
-        guard !state.isResizing, !state.isMoving else { return .windowInteraction }
+        guard !state.isResizing, !state.isMoving, !isLiveColumnDragActive else { return .windowInteraction }
         guard controller.settings.gestures.scrollEnabled else { return .wheelDisabled }
         let requiredModifiers = controller.settings.gestures.scrollModifierKey.cgEventFlag
         guard Self.mouseWheelModifiersMatch(modifiers, required: requiredModifiers) else { return .modifierMismatch }
@@ -421,11 +424,15 @@ extension MouseEventHandler {
         warpDraggedPointer(at: location)
         controller?.workspaceBarManager.handleAutoHideMouseMoved(at: location)
         beginNativeTitleBarDragIfNeeded(button: button)
-        if !isCapturedInteraction(button), shouldBlockOwnWindowInput(at: location) {
+        if ownWindowInterruptsDrag(button, at: location) {
             cancelActiveMouseInteraction()
             return
         }
         handleMouseDraggedFromTap(at: location, button: button, requirePressedButtonCheck: false)
+    }
+
+    private func ownWindowInterruptsDrag(_ button: MouseButton, at location: CGPoint) -> Bool {
+        !isCapturedInteraction(button) && !isLiveColumnDragActive && shouldBlockOwnWindowInput(at: location)
     }
 
     private func warpDraggedPointer(at location: CGPoint) {

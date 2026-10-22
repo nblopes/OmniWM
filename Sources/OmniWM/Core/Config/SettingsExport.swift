@@ -113,6 +113,7 @@ struct SettingsExport: Equatable {
         var edgeGaps: Bool?
         var resizeStepPercent: Int?
         var moveWindowStacksIntoColumn: Bool?
+        var naturalWindowDrag: Bool?
     }
 
     struct Dwindle: Codable, Equatable {
@@ -373,7 +374,8 @@ extension SettingsExport.Niri {
             defaultContainerPrimarySpan: 0.5,
             edgeGaps: true,
             resizeStepPercent: BuiltInSettingsDefaults.niriResizeStepPercent,
-            moveWindowStacksIntoColumn: true
+            moveWindowStacksIntoColumn: true,
+            naturalWindowDrag: false
         )
     }
 }
