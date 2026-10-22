@@ -93,6 +93,10 @@ final class NiriSettings {
         min(100, max(1, percent))
     }
 
+    var naturalWindowDrag = NiriSettings.defaults.naturalWindowDrag ?? false {
+        didSet { onChange?() }
+    }
+
     var monitorOverrides: [MonitorNiriSettings] = [] {
         didSet { onChange?() }
     }
@@ -110,7 +114,8 @@ final class NiriSettings {
             resizeStepPercent: resizeStepPercent,
             moveWindowStacksIntoColumn: moveWindowStacksIntoColumn,
             allowOverscroll: allowOverscroll,
-            overscrollVisibleStripPercent: overscrollVisibleStripPercent
+            overscrollVisibleStripPercent: overscrollVisibleStripPercent,
+            naturalWindowDrag: naturalWindowDrag
         )
     }
 
@@ -125,6 +130,7 @@ final class NiriSettings {
             ?? baseline.overscrollVisibleStripPercent ?? 5
         edgeGaps = niri.edgeGaps ?? baseline.edgeGaps ?? true
         moveWindowStacksIntoColumn = niri.moveWindowStacksIntoColumn ?? baseline.moveWindowStacksIntoColumn ?? true
+        naturalWindowDrag = niri.naturalWindowDrag ?? baseline.naturalWindowDrag ?? false
         resizeStepPercent = niri.resizeStepPercent ?? baseline.resizeStepPercent ?? BuiltInSettingsDefaults
             .niriResizeStepPercent
         containerPrimarySpanPresets = NiriSettings.validatedContainerPrimarySpanPresets(

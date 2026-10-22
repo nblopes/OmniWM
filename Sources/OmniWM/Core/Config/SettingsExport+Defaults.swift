@@ -126,7 +126,7 @@ extension SettingsExport.Niri {
             moveWindowStacksIntoColumn: true,
             allowOverscroll: false,
             overscrollVisibleStripPercent: 5
-        )
+        ).withNaturalWindowDragDefaults()
     }
 }
 
