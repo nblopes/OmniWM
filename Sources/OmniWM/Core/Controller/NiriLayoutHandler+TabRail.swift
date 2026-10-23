@@ -35,7 +35,8 @@ extension NiriLayoutHandler {
         for index in columnSpan.indices where columnSpan[index].isTabbed {
             let column = columnSpan[index]
             let key = TabRailKey(workspaceId: workspaceId, owner: .niriColumn(column.id))
-            guard let frame = column.renderedFrame,
+            guard !engine.isLiveDraggedColumn(column),
+                  let frame = column.renderedFrame,
                   !frame.isNull,
                   !frame.isInfinite,
                   frame.width > 0,
@@ -68,7 +69,7 @@ extension NiriLayoutHandler {
     ) -> [TabRailInfo] {
         guard let controller else { return [] }
         var infos: [TabRailInfo] = []
-        for column in engine.columns(in: workspaceId) where column.isTabbed {
+        for column in engine.columns(in: workspaceId) where column.isTabbed && !engine.isLiveDraggedColumn(column) {
             let windows = engine.projectedWindows(in: column, workspaceId: workspaceId)
             guard windows.count > 1 else { continue }
 
