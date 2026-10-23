@@ -18,7 +18,7 @@ extension NiriLayoutEngine {
               !window.isFullscreen,
               !isExcludedFromProjection(windowToken, in: context.workspaceId),
               let column = findColumn(containing: window, in: context.workspaceId),
-              column.windowNodes.count == 1,
+              column.windowNodes.count == 1 || column.isTabbed,
               projectedColumns(in: context.workspaceId).count > 1
         else { return false }
 
@@ -181,6 +181,11 @@ extension NiriLayoutEngine {
         return move.windowToken == token && move.workspaceId == workspaceId
     }
 
+    func isLiveDraggedColumn(_ column: NiriContainer) -> Bool {
+        guard let move = liveColumnMove else { return false }
+        return liveDraggedColumn(for: move) === column
+    }
+
     func liveColumnMoveSettled() {
         liveColumnMove?.phase = .dragging
     }
@@ -209,7 +214,13 @@ extension NiriLayoutEngine {
         }
         liveColumnMove = nil
         restoreLiveSizing(move.ownSizing, to: dragged)
-        let releasedAt = viewBefore.flatMap { view in releaseX.map { $0 - context.workingFrame.minX + view } }
+        let tilesOrigin = projectedTilesOrigin(
+            displayMode: dragged.displayMode,
+            visibleWindowCount: projectedWindows(in: dragged, workspaceId: context.workspaceId).count
+        )
+        let releasedAt = viewBefore.flatMap { view in
+            releaseX.map { $0 - tilesOrigin.x - context.workingFrame.minX + view }
+        }
         animateLiveColumnChange(
             from: before,
             anchoredOn: dragged,
