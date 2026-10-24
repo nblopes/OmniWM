@@ -167,6 +167,7 @@ Options for the scrolling (Niri) layout.
 | `resizeStepPercent` *(optional)* | integer | `5` | Increment for Niri grow/shrink actions in percentage points, clamped to 1–100. Applies to container primary, window primary, and window secondary spans. Explicit CLI sizes are unaffected. |
 | `edgeGaps` *(optional)* | boolean | `true` | Keeps the inner gap between columns and the screen edges, in addition to the outer gaps. `false` uses the inner gap only between columns and between stacked windows. A lone window is unaffected. |
 | `moveWindowStacksIntoColumn` *(optional)* | boolean | `true` | Moving a lone window left or right stacks it into the adjacent column. `false` swaps its column with the adjacent one instead. A window that shares a column still moves out into its own column. |
+| `naturalWindowDragModifier` *(optional)* | string | `"option"` | With `naturalWindowDrag` on, holding this modifier while dragging a window by its title bar stacks it onto the window under the pointer instead of moving its column: the column under the pointer makes room where the window will land, and over a tabbed column the window joins as a new tab after the active one. The modifier's state when the mouse is released decides. When it equals `mouseMoveModifierKey`, it replaces that move in Niri, so a modified drag on a window's body does nothing there. Values as for `mouseMoveModifierKey`; `off` never stacks. |
 
 The resize increment defaults to 5% instead of the previous fixed 10%.
 

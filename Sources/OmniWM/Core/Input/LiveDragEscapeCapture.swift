@@ -11,6 +11,7 @@ final class LiveDragEscapeCapture {
     var installsEventTap = true
 
     private var onEscape: (() -> Void)?
+    private var onModifiersChanged: ((CGEventFlags) -> Void)?
     private var swallowsEscapeKeyUp = false
     private var tap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
@@ -19,8 +20,9 @@ final class LiveDragEscapeCapture {
         stop()
     }
 
-    func start(onEscape: @escaping () -> Void) {
+    func start(onEscape: @escaping () -> Void, onModifiersChanged: ((CGEventFlags) -> Void)? = nil) {
         self.onEscape = onEscape
+        self.onModifiersChanged = onModifiersChanged
         isActive = true
         if installsEventTap, tap == nil {
             installTap()
@@ -30,6 +32,7 @@ final class LiveDragEscapeCapture {
     func stop() {
         isActive = false
         onEscape = nil
+        onModifiersChanged = nil
         guard swallowsEscapeKeyUp else {
             EventTapTeardown.tearDown(tap: &tap, runLoopSource: &runLoopSource)
             return
@@ -37,6 +40,13 @@ final class LiveDragEscapeCapture {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
             self?.swallowsEscapeKeyUp = false
             self?.tearDownIfStopped()
+        }
+    }
+
+    func reportModifiersChanged(_ flags: CGEventFlags) {
+        guard isActive, let onModifiersChanged else { return }
+        DispatchQueue.main.async {
+            onModifiersChanged(flags)
         }
     }
 
@@ -72,12 +82,18 @@ final class LiveDragEscapeCapture {
 
     private func installTap() {
         let eventMask = (1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.keyUp.rawValue)
+            | (1 << CGEventType.flagsChanged.rawValue)
         let callback: CGEventTapCallBack = { _, type, event, userInfo in
             guard let userInfo else { return Unmanaged.passUnretained(event) }
             let capture = Unmanaged<LiveDragEscapeCapture>.fromOpaque(userInfo).takeUnretainedValue()
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+            let flags = event.flags
             let consumed = MainActor.assumeIsolated {
-                capture.handleTapEvent(type: type, keyCode: keyCode)
+                if type == .flagsChanged {
+                    capture.reportModifiersChanged(flags)
+                    return false
+                }
+                return capture.handleTapEvent(type: type, keyCode: keyCode)
             }
             return consumed ? nil : Unmanaged.passUnretained(event)
         }

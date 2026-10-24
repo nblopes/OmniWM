@@ -84,6 +84,7 @@ extension CanonicalTOMLConfig {
         niri.edgeGaps = niri.edgeGaps ?? true
         niri.moveWindowStacksIntoColumn = niri.moveWindowStacksIntoColumn ?? true
         niri.naturalWindowDrag = niri.naturalWindowDrag ?? false
+        niri.naturalWindowDragModifier = niri.naturalWindowDragModifier ?? .option
         dwindle = try container.decode(SettingsExport.Dwindle.self, forKey: .dwindle)
         borders = try container.decode(SettingsExport.Borders.self, forKey: .borders)
         overview = try container.decode(SettingsExport.Overview.self, forKey: .overview)

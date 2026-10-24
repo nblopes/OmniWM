@@ -33,6 +33,7 @@ final class MouseEventHandler {
     var multitouchSourceFactory: @MainActor () -> MultitouchGestureSource = { MultitouchGestureSource() }
     var pressedMouseButtonsProvider: @MainActor () -> Int = { Int(NSEvent.pressedMouseButtons) }
     var liveDragClock: @MainActor () -> TimeInterval = { CACurrentMediaTime() }
+    var modifierFlagsProvider: @MainActor () -> CGEventFlags = { CGEventSource.flagsState(.combinedSessionState) }
     var nativeWindowFrameProvider: @MainActor (AXWindowRef) -> CGRect? = {
         AXWindowService.framePreferFast($0)
     }
@@ -278,6 +279,11 @@ final class MouseEventHandler {
         }
         let otherButtonMask = resolvedOtherButtonMask
         let moveFlags = controller?.settings.gestures.mouseMoveModifierKey.cgEventFlags
+        let naturalDragFlags = controller.flatMap { controller in
+            controller.settings.niri.naturalWindowDrag
+                ? controller.settings.niri.naturalWindowDragModifier.cgEventFlags
+                : nil
+        }
         let resizeFlags = controller?.settings.gestures.mouseResizeModifierKey.cgEventFlag ?? []
         let scrollFlags = controller?.settings.gestures.scrollModifierKey.cgEventFlag ?? []
         let minFingers: Int
@@ -296,6 +302,7 @@ final class MouseEventHandler {
             snapshot.activeCapture = capturedButton
             snapshot.claimedOtherButtonMask = otherButtonMask
             snapshot.moveModifier = moveFlags
+            snapshot.naturalDragModifier = naturalDragFlags
             snapshot.resizeModifier = resizeFlags
             snapshot.scrollModifier = scrollFlags
             snapshot.minGestureFingers = minFingers

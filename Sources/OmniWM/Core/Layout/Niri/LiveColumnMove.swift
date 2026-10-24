@@ -35,10 +35,71 @@ struct LiveColumnMove {
         let since: TimeInterval
     }
 
+    struct Landing: Equatable {
+        let columnId: NodeId
+        let targetWindowId: NodeId
+        let above: Bool
+    }
+
+    struct StackDrop: Equatable {
+        let workspaceId: WorkspaceDescriptor.ID
+        let windowId: NodeId
+        let homeColumnId: NodeId
+        let dropSpaceId: NodeId?
+        let targetColumnId: NodeId
+    }
+
+    struct WindowSpan {
+        let window: NiriWindow
+        let minY: CGFloat
+        let maxY: CGFloat
+
+        func contains(y: CGFloat) -> Bool {
+            minY <= y && y < maxY
+        }
+    }
+
+    struct FreeArea: Equatable {
+        let landing: Landing
+        let height: CGFloat
+    }
+
+    enum StackChoice: Equatable {
+        case keep
+        case home
+        case land(Landing)
+    }
+
+    struct StackProbe: Equatable {
+        let columnId: NodeId?
+        let cursor: CGPoint
+        let wouldChange: Bool
+    }
+
+    struct WindowSizing: Equatable {
+        let size: CGFloat
+        let height: WeightedSize
+    }
+
+    struct OriginalSlot: Equatable {
+        let columnId: NodeId
+        let index: Int
+        let displayMode: ColumnDisplay
+        let activeTileIdx: Int
+        let windowSizing: WindowSizing
+    }
+
     let windowId: NodeId
     let windowToken: WindowToken
     let workspaceId: WorkspaceDescriptor.ID
+    var homeColumnId: NodeId
+    let isWholeColumn: Bool
+    let pullsTab: Bool
+    var inStack: Bool
+    var homeSlotIndex: Int
+    let originalSlot: OriginalSlot
     let ownSizing: NiriContainerSizingState
+    var ownWindowSizing: WindowSizing
     let originalColumnOrder: [NodeId]
     let originalViewport: ViewportState
     let originalActiveColumnId: NodeId
@@ -47,5 +108,15 @@ struct LiveColumnMove {
     var hover: Hover?
     var dropSpaceId: NodeId?
     var lockedTargetId: NodeId?
+    var stackMode = false
+    var landing: Landing?
+    var stackSuppressPoint: CGPoint?
+    var awaitsPointerMoveFrom: CGPoint?
+    var floatingFrame: CGRect?
     var swapCount = 0
+
+    func isStill(at cursor: CGPoint) -> Bool {
+        guard let still = awaitsPointerMoveFrom else { return false }
+        return hypot(cursor.x - still.x, cursor.y - still.y) < 1
+    }
 }

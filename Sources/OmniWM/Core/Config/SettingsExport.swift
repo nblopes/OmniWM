@@ -114,6 +114,7 @@ struct SettingsExport: Equatable {
         var resizeStepPercent: Int?
         var moveWindowStacksIntoColumn: Bool?
         var naturalWindowDrag: Bool?
+        var naturalWindowDragModifier: MouseMoveModifierKey?
     }
 
     struct Dwindle: Codable, Equatable {
@@ -375,7 +376,8 @@ extension SettingsExport.Niri {
             edgeGaps: true,
             resizeStepPercent: BuiltInSettingsDefaults.niriResizeStepPercent,
             moveWindowStacksIntoColumn: true,
-            naturalWindowDrag: false
+            naturalWindowDrag: false,
+            naturalWindowDragModifier: .option
         )
     }
 }

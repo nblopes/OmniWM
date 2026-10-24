@@ -83,8 +83,10 @@ extension MouseEventHandler {
             semanticOffset: probe.viewOffset,
             at: time
         ) ?? probe.viewOffset
-        guard let strip = liveEdgeScrollStrip(at: probe, engine: engine, workspaceId: workspaceId) else { return false }
-        return engine.liveColumnMoveWouldChange(cursor: location, strip: strip, in: workspaceId)
+        guard let strip = liveEdgeScrollStrip(at: probe, engine: engine, workspaceId: workspaceId),
+              let context = liveColumnContext(for: workspaceId)
+        else { return false }
+        return engine.liveColumnMoveWouldChange(cursor: location, strip: strip, context: context)
     }
 
     private func liveEdgeScrollStrip(
