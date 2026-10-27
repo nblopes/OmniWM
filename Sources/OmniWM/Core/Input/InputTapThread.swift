@@ -15,6 +15,7 @@ struct TapFilterSnapshot: Sendable {
     var minGestureFingers: Int = 3
     var gestureActiveOrLatched: Bool = false
     var isInputSuppressed: Bool = false
+    var naturalDoubleClickArmedAt: CGPoint?
 }
 
 private struct TouchCountProviderBox: Sendable {
@@ -160,25 +161,7 @@ final class InputTapThread: @unchecked Sendable {
         let location = ScreenCoordinateSpace.toAppKit(point: event.location)
         switch type {
         case .leftMouseDown:
-            let flags = event.flags
-            stripNaturalDragOption(from: event, snap: snap)
-            let isMoveCandidate = MouseEventHandler.mouseMoveModifiersMatch(flags, required: snap.moveModifier)
-            guard isMoveCandidate else {
-                DispatchQueue.main.async {
-                    MainActor.assumeIsolated {
-                        _ = MouseEventHandler._instance?.receiveTapMouseDown(
-                            at: location,
-                            modifiers: flags,
-                            button: .left
-                        )
-                    }
-                }
-                return event
-            }
-            _ = evaluateAuthoritativeTapOnMain(
-                type: type, location: location, modifiers: flags, buttonNumber: 0, scrollPayload: nil
-            )
-            return event
+            return evaluateLeftMouseDown(event, location: location, snap: snap)
         case .leftMouseDragged:
             guard snap.activeCapture == .left else {
                 EventIntake.post(.mouseDragged(button: .left, location: location))
@@ -314,7 +297,8 @@ final class InputTapThread: @unchecked Sendable {
         location: CGPoint,
         modifiers: CGEventFlags,
         buttonNumber: Int64,
-        scrollPayload: (payload: MouseScrollIntake, traceMetadata: TrackpadScrollTrace.ScrollMetadata?)?
+        scrollPayload: (payload: MouseScrollIntake, traceMetadata: TrackpadScrollTrace.ScrollMetadata?)?,
+        clickCount: Int64 = 1
     ) -> Bool {
         if Thread.isMainThread {
             return MainActor.assumeIsolated {
@@ -323,7 +307,8 @@ final class InputTapThread: @unchecked Sendable {
                     location: location,
                     modifiers: modifiers,
                     buttonNumber: buttonNumber,
-                    scrollPayload: scrollPayload
+                    scrollPayload: scrollPayload,
+                    clickCount: clickCount
                 ) ?? false
             }
         }
@@ -335,7 +320,8 @@ final class InputTapThread: @unchecked Sendable {
                     location: location,
                     modifiers: modifiers,
                     buttonNumber: buttonNumber,
-                    scrollPayload: scrollPayload
+                    scrollPayload: scrollPayload,
+                    clickCount: clickCount
                 ) ?? false
             }
         }
@@ -343,6 +329,48 @@ final class InputTapThread: @unchecked Sendable {
 }
 
 extension InputTapThread {
+    private nonisolated func evaluateLeftMouseDown(
+        _ event: CGEvent,
+        location: CGPoint,
+        snap: TapFilterSnapshot
+    ) -> CGEvent? {
+        let flags = event.flags
+        stripNaturalDragOption(from: event, snap: snap)
+        let clickCount = event.getIntegerValueField(.mouseEventClickState)
+        if MouseEventHandler.asksAboutNaturalDoubleClick(
+            clickCount: clickCount,
+            flags: flags,
+            naturalDragModifier: snap.naturalDragModifier,
+            armedAt: snap.naturalDoubleClickArmedAt,
+            location: location
+        ) {
+            let suppress = evaluateAuthoritativeTapOnMain(
+                type: .leftMouseDown, location: location, modifiers: flags, buttonNumber: 0, scrollPayload: nil,
+                clickCount: clickCount
+            )
+            return suppress ? nil : event
+        }
+        let isMoveCandidate = MouseEventHandler.mouseMoveModifiersMatch(flags, required: snap.moveModifier)
+        guard isMoveCandidate else {
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    _ = MouseEventHandler._instance?.receiveTapMouseDown(
+                        at: location,
+                        modifiers: flags,
+                        button: .left,
+                        clickCount: clickCount
+                    )
+                }
+            }
+            return event
+        }
+        _ = evaluateAuthoritativeTapOnMain(
+            type: .leftMouseDown, location: location, modifiers: flags, buttonNumber: 0, scrollPayload: nil,
+            clickCount: clickCount
+        )
+        return event
+    }
+
     private nonisolated func forwardCapturedDrag(
         _ event: CGEvent,
         type: CGEventType,
