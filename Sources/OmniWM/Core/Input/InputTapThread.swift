@@ -16,6 +16,7 @@ struct TapFilterSnapshot: Sendable {
     var minGestureFingers: Int = 3
     var gestureActiveOrLatched: Bool = false
     var isInputSuppressed: Bool = false
+    var naturalDoubleClickArmedAt: CGPoint?
 }
 
 private struct TouchCountProviderBox: Sendable {
@@ -163,10 +164,14 @@ final class InputTapThread: @unchecked Sendable {
         case .leftMouseDown:
             let flags = event.flags
             stripNaturalDragOption(from: event, location: location, snap: snap)
-            evaluateLeftMouseDown(
-                at: location, modifiers: flags, snapshot: snap, captureWindowFrames: Self.captureWindowFrames
+            let suppress = evaluateLeftMouseDown(
+                at: location,
+                modifiers: flags,
+                clickCount: event.getIntegerValueField(.mouseEventClickState),
+                snapshot: snap,
+                captureWindowFrames: Self.captureWindowFrames
             )
-            return event
+            return suppress ? nil : event
         case .leftMouseDragged:
             guard snap.activeCapture == .left else {
                 EventIntake.post(.mouseDragged(button: .left, location: location))
@@ -302,7 +307,8 @@ final class InputTapThread: @unchecked Sendable {
         location: CGPoint,
         modifiers: CGEventFlags,
         buttonNumber: Int64,
-        scrollPayload: (payload: MouseScrollIntake, traceMetadata: TrackpadScrollTrace.ScrollMetadata?)?
+        scrollPayload: (payload: MouseScrollIntake, traceMetadata: TrackpadScrollTrace.ScrollMetadata?)?,
+        clickCount: Int64 = 1
     ) -> Bool {
         if Thread.isMainThread {
             return MainActor.assumeIsolated {
@@ -311,7 +317,8 @@ final class InputTapThread: @unchecked Sendable {
                     location: location,
                     modifiers: modifiers,
                     buttonNumber: buttonNumber,
-                    scrollPayload: scrollPayload
+                    scrollPayload: scrollPayload,
+                    clickCount: clickCount
                 ) ?? false
             }
         }
@@ -323,7 +330,8 @@ final class InputTapThread: @unchecked Sendable {
                     location: location,
                     modifiers: modifiers,
                     buttonNumber: buttonNumber,
-                    scrollPayload: scrollPayload
+                    scrollPayload: scrollPayload,
+                    clickCount: clickCount
                 ) ?? false
             }
         }
@@ -331,18 +339,33 @@ final class InputTapThread: @unchecked Sendable {
 }
 
 extension InputTapThread {
+    @discardableResult
     nonisolated func evaluateLeftMouseDown(
         at location: CGPoint,
         modifiers: CGEventFlags,
+        clickCount: Int64 = 1,
         snapshot: TapFilterSnapshot,
         captureWindowFrames: () -> [WindowToken: CGRect]
-    ) {
+    ) -> Bool {
+        if MouseEventHandler.asksAboutNaturalDoubleClick(
+            clickCount: clickCount,
+            flags: modifiers,
+            naturalDragModifier: snapshot.naturalDragModifier,
+            armedAt: snapshot.naturalDoubleClickArmedAt,
+            location: location
+        ) {
+            return evaluateAuthoritativeTapOnMain(
+                type: .leftMouseDown, location: location, modifiers: modifiers, buttonNumber: 0, scrollPayload: nil,
+                clickCount: clickCount
+            )
+        }
         let isMoveCandidate = MouseEventHandler.mouseMoveModifiersMatch(modifiers, required: snapshot.moveModifier)
         if isMoveCandidate {
             _ = evaluateAuthoritativeTapOnMain(
-                type: .leftMouseDown, location: location, modifiers: modifiers, buttonNumber: 0, scrollPayload: nil
+                type: .leftMouseDown, location: location, modifiers: modifiers, buttonNumber: 0, scrollPayload: nil,
+                clickCount: clickCount
             )
-            return
+            return false
         }
         let needsNativeResizeBaseline = snapshot.adoptNativeResize
             && modifiers.isDisjoint(with: MouseEventHandler.relevantModifierFlags)
@@ -350,10 +373,14 @@ extension InputTapThread {
         DispatchQueue.main.async {
             MainActor.assumeIsolated {
                 _ = MouseEventHandler._instance?.receiveTapMouseDown(
-                    at: location, modifiers: modifiers, windowServerFramesAtMouseDown: windowServerFrames
+                    at: location,
+                    modifiers: modifiers,
+                    clickCount: clickCount,
+                    windowServerFramesAtMouseDown: windowServerFrames
                 )
             }
         }
+        return false
     }
 
     private nonisolated static func captureWindowFrames() -> [WindowToken: CGRect] {
