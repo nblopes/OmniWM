@@ -207,8 +207,12 @@ extension MouseEventHandler {
     func receiveTapMouseDown(
         at location: CGPoint,
         modifiers: CGEventFlags,
-        button: MouseButton = .left
+        button: MouseButton = .left,
+        clickCount: Int64 = 1
     ) -> Bool {
+        if button == .left {
+            armNaturalDoubleClick(at: location, modifiers: modifiers, clickCount: clickCount)
+        }
         if let latched = state.parkingEdgePressButton,
            latched == button || pressedMouseButtonsProvider() & latched.pressedMask == 0
         {
@@ -222,6 +226,9 @@ extension MouseEventHandler {
                 state.liveDropScroll = nil
                 retireNativeTitleBarDragAtInputBoundary()
             }
+        }
+        if button == .left, clickCount == 2, handleNaturalDoubleClick(at: location, modifiers: modifiers) {
+            return true
         }
         return dispatchMouseDown(
             at: location,
