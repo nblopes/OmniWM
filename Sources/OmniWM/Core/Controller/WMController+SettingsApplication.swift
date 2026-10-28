@@ -136,7 +136,7 @@ extension WMController {
     }
 
     func applyNaturalWindowDragSettings() {
-        updateNiriConfig(tabbedColumnsFillHeight: settings.niri.naturalWindowDrag)
+        updateNiriConfig(naturalWindowDrag: settings.niri.naturalWindowDrag)
         mouseEventHandler.syncTapFilterSnapshot()
     }
 
@@ -156,7 +156,7 @@ extension WMController {
             edgeOverscroll: settings.niri.edgeOverscroll,
             containerPrimarySpanPresets: settings.niri.containerPrimarySpanPresets,
             defaultContainerPrimarySpan: settings.niri.defaultContainerPrimarySpan,
-            tabbedColumnsFillHeight: settings.niri.naturalWindowDrag
+            naturalWindowDrag: settings.niri.naturalWindowDrag
         )
 
         if dwindleEngine == nil {

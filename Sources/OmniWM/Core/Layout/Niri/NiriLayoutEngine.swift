@@ -134,6 +134,8 @@ final class NiriLayoutEngine {
         }
     }
 
+    var keepsStripEndsOnScreen = false
+
     var defaultContainerPrimarySpan: CGFloat? = 0.5
 
     init(visibleContainerCount: Int = 2, infiniteLoop: Bool = false) {
@@ -298,11 +300,12 @@ final class NiriLayoutEngine {
         edgeOverscroll: NiriEdgeOverscroll? = nil,
         presetContainerPrimarySpans: [PresetSize]? = nil,
         defaultContainerPrimarySpan: CGFloat?? = nil,
-        tabbedColumnsFillHeight: Bool? = nil
+        naturalWindowDrag: Bool? = nil
     ) {
         assertSanctionedMutation()
-        if let tabbedColumnsFillHeight {
-            self.tabbedColumnsFillHeight = tabbedColumnsFillHeight
+        if let naturalWindowDrag {
+            tabbedColumnsFillHeight = naturalWindowDrag
+            keepsStripEndsOnScreen = naturalWindowDrag
         }
         if let max = visibleContainerCount {
             self.visibleContainerCount = max.clamped(to: 1 ... 5)
