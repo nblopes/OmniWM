@@ -87,8 +87,7 @@ extension NiriLayoutEngine {
         if liveFreeArea(at: cursor, strip: strip, move: move, context: context) != nil {
             return .unchanged
         }
-        let underPointer = liveColumn(in: strip, at: cursor, ignoring: dropSpace)
-            ?? liveColumnPastStripEnd(in: strip, at: cursor, ignoring: dropSpace, context: context)
+        let underPointer = liveColumnOrStripEnd(in: strip, at: cursor, ignoring: dropSpace, context: context)
         let side = underPointer.map {
             liveTargetSide($0, cursor: cursor, strip: strip, home: dragged, awayFromHome: immediate, context: context)
         } ?? .after
@@ -230,8 +229,7 @@ extension NiriLayoutEngine {
             return false
         }
         let dropSpace = liveDropSpace(for: move)
-        guard let underPointer = liveColumn(in: strip, at: cursor, ignoring: dropSpace)
-            ?? liveColumnPastStripEnd(in: strip, at: cursor, ignoring: dropSpace, context: context)
+        guard let underPointer = liveColumnOrStripEnd(in: strip, at: cursor, ignoring: dropSpace, context: context)
         else { return false }
         let side = liveTargetSide(
             underPointer,

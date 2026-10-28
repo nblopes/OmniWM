@@ -86,6 +86,7 @@ extension ViewportState {
         alwaysCenterSingleColumn: Bool = false,
         animationConfig: SpringConfig? = nil,
         fromContainerIndex: Int? = nil,
+        keepsStripEndsOnScreen: Bool = false,
         scale: CGFloat = 2.0,
         viewFrame: CGRect? = nil
     ) {
@@ -111,6 +112,7 @@ extension ViewportState {
             centerMode: centerMode,
             alwaysCenterSingleColumn: alwaysCenterSingleColumn,
             fromContainerIndex: fromContainerIndex,
+            keepsStripEndsOnScreen: keepsStripEndsOnScreen,
             scale: scale,
             viewFrame: viewFrame
         )
