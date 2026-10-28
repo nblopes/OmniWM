@@ -138,6 +138,8 @@ final class NiriLayoutEngine {
         }
     }
 
+    var keepsStripEndsOnScreen = false
+
     var defaultContainerPrimarySpan: CGFloat? = 0.5
 
     init(visibleContainerCount: Int = 2, infiniteLoop: Bool = false) {
