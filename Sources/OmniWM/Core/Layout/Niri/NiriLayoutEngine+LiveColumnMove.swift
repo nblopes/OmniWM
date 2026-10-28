@@ -88,6 +88,7 @@ extension NiriLayoutEngine {
             return .unchanged
         }
         let underPointer = liveColumn(in: strip, at: cursor, ignoring: dropSpace)
+            ?? liveColumnPastStripEnd(in: strip, at: cursor, ignoring: dropSpace, context: context)
         let side = underPointer.map {
             liveTargetSide($0, cursor: cursor, strip: strip, home: dragged, awayFromHome: immediate, context: context)
         } ?? .after
@@ -229,7 +230,9 @@ extension NiriLayoutEngine {
             return false
         }
         let dropSpace = liveDropSpace(for: move)
-        guard let underPointer = liveColumn(in: strip, at: cursor, ignoring: dropSpace) else { return false }
+        guard let underPointer = liveColumn(in: strip, at: cursor, ignoring: dropSpace)
+            ?? liveColumnPastStripEnd(in: strip, at: cursor, ignoring: dropSpace, context: context)
+        else { return false }
         let side = liveTargetSide(
             underPointer,
             cursor: cursor,
@@ -287,8 +290,10 @@ extension NiriLayoutEngine {
         if let cursor, liveColumnMoveDropIntoFreeArea(at: cursor, move: &move, context: context, state: &state) {
             return liveStackDropBegin(releasedAt: releasedFrame, move: move, context: context, state: &state)
         }
-        if stacking, move.landing == nil, let cursor {
-            _ = liveColumnMoveLandAtRelease(cursor, move: &move, context: context, state: &state)
+        if stacking, move.landing == nil, let cursor,
+           !liveColumnMoveLandAtRelease(cursor, move: &move, context: context, state: &state)
+        {
+            liveColumnMoveToStripEnd(at: cursor, move: &move, context: context, state: &state)
         }
         if stacking, move.landing != nil {
             return liveStackDropBegin(
