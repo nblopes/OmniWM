@@ -113,6 +113,7 @@ extension NiriLayoutEngine {
             hiddenPlacementMonitors: hiddenPlacementMonitors
         )
         clearExcludedColumnFrames(in: workspaceId, excluding: excludedTokens)
+        applyEdgePeekCaps(in: workspaceId, workingFrame: context.area.workingFrame, gap: context.primaryGap)
         if animationTime == nil {
             reconcilePrimarySpanFit(
                 in: workspaceId,

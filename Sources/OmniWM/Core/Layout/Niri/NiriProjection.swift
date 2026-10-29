@@ -315,7 +315,7 @@ extension NiriLayoutEngine {
                 alwaysCenterSingleColumn: settings.alwaysCenterSingleColumn,
                 animationConfig: animationConfig,
                 fromContainerIndex: projectedFromIndex,
-                keepsStripEndsOnScreen: keepsStripEndsOnScreen,
+                edges: viewportEdgeRules(in: context.workspaceId),
                 scale: displayScale(in: context.workspaceId),
                 viewFrame: monitorForWorkspace(context.workspaceId)?.frame
             )
@@ -374,7 +374,8 @@ extension NiriLayoutEngine {
                     workingArea: context.workingFrame,
                     viewFrame: viewFrame,
                     scale: scale,
-                    edgeOverscroll: effectiveSettings(in: context.workspaceId).edgeOverscroll
+                    edgeOverscroll: effectiveSettings(in: context.workspaceId).edgeOverscroll,
+                    edgePeeks: edgePeekWidths(in: context.workspaceId)
                 ),
                 motion: context.motion,
                 snapToColumn: snapToColumn,
