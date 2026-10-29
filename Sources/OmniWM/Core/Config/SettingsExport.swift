@@ -121,6 +121,8 @@ struct SettingsExport: Equatable {
         var overscrollVisibleStripPercent: Int?
         var naturalWindowDrag: Bool?
         var naturalWindowDragModifier: MouseMoveModifierKey?
+        var edgePeek: Bool?
+        var edgePeekPercent: Double?
     }
 
     struct Dwindle: Codable, Equatable {
@@ -389,7 +391,7 @@ extension SettingsExport.Niri {
             moveWindowStacksIntoColumn: true,
             allowOverscroll: false,
             overscrollVisibleStripPercent: 5
-        ).withNaturalWindowDragDefaults()
+        ).withNaturalWindowDragDefaults(edgePeekPercent: BuiltInSettingsDefaults.niriEdgePeekPercent)
     }
 }
 

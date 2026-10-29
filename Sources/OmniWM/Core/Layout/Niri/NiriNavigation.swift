@@ -255,7 +255,7 @@ extension NiriLayoutEngine {
             alwaysCenterSingleColumn: settings.alwaysCenterSingleColumn,
             animationConfig: animationConfig,
             fromContainerIndex: prevIdx,
-            keepsStripEndsOnScreen: keepsStripEndsOnScreen,
+            edges: viewportEdgeRules(in: context.workspaceId),
             scale: scale,
             viewFrame: viewFrame
         )
@@ -275,6 +275,7 @@ extension NiriLayoutEngine {
             orientation: orientation,
             motion: motion
         )
+        applyEdgePeekCaps(in: workspaceId, workingFrame: workingFrame, gap: gaps)
         for container in columns(in: workspaceId) {
             switch orientation {
             case .horizontal where container.cachedWidth <= 0:

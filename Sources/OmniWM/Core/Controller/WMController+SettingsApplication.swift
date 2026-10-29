@@ -135,8 +135,16 @@ extension WMController {
         }
     }
 
+    var edgePeekShare: CGFloat? {
+        guard settings.niri.naturalWindowDrag, settings.niri.edgePeek else { return nil }
+        return CGFloat(settings.niri.edgePeekPercent / 100)
+    }
+
     func applyNaturalWindowDragSettings() {
-        updateNiriConfig(naturalWindowDrag: settings.niri.naturalWindowDrag)
+        updateNiriConfig(
+            naturalWindowDrag: settings.niri.naturalWindowDrag,
+            edgePeekShare: .some(edgePeekShare)
+        )
         mouseEventHandler.syncTapFilterSnapshot()
     }
 
@@ -156,7 +164,8 @@ extension WMController {
             edgeOverscroll: settings.niri.edgeOverscroll,
             containerPrimarySpanPresets: settings.niri.containerPrimarySpanPresets,
             defaultContainerPrimarySpan: settings.niri.defaultContainerPrimarySpan,
-            naturalWindowDrag: settings.niri.naturalWindowDrag
+            naturalWindowDrag: settings.niri.naturalWindowDrag,
+            edgePeekShare: .some(edgePeekShare)
         )
 
         if dwindleEngine == nil {

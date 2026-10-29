@@ -81,7 +81,8 @@ extension WMController {
         edgeOverscroll: NiriEdgeOverscroll? = nil,
         containerPrimarySpanPresets: [Double]? = nil,
         defaultContainerPrimarySpan: Double?? = nil,
-        naturalWindowDrag: Bool? = nil
+        naturalWindowDrag: Bool? = nil,
+        edgePeekShare: CGFloat?? = nil
     ) {
         niriLayoutHandler.updateNiriConfig(
             visibleContainerCount: visibleContainerCount,
@@ -92,7 +93,8 @@ extension WMController {
             edgeOverscroll: edgeOverscroll,
             containerPrimarySpanPresets: containerPrimarySpanPresets,
             defaultContainerPrimarySpan: defaultContainerPrimarySpan,
-            naturalWindowDrag: naturalWindowDrag
+            naturalWindowDrag: naturalWindowDrag,
+            edgePeekShare: edgePeekShare
         )
     }
 
