@@ -101,6 +101,25 @@ final class NiriSettings {
         didSet { onChange?() }
     }
 
+    var edgePeek = NiriSettings.defaults.edgePeek ?? false {
+        didSet { onChange?() }
+    }
+
+    var edgePeekPercent = NiriSettings.defaults.edgePeekPercent ?? BuiltInSettingsDefaults.niriEdgePeekPercent {
+        didSet {
+            let validated = NiriSettings.validatedEdgePeekPercent(edgePeekPercent)
+            if validated != edgePeekPercent {
+                edgePeekPercent = validated
+                return
+            }
+            onChange?()
+        }
+    }
+
+    static func validatedEdgePeekPercent(_ percent: Double) -> Double {
+        min(10, max(1, percent))
+    }
+
     var monitorOverrides: [MonitorNiriSettings] = [] {
         didSet { onChange?() }
     }
@@ -120,7 +139,9 @@ final class NiriSettings {
             allowOverscroll: allowOverscroll,
             overscrollVisibleStripPercent: overscrollVisibleStripPercent,
             naturalWindowDrag: naturalWindowDrag,
-            naturalWindowDragModifier: naturalWindowDragModifier
+            naturalWindowDragModifier: naturalWindowDragModifier,
+            edgePeek: edgePeek,
+            edgePeekPercent: edgePeekPercent
         )
     }
 
@@ -137,6 +158,10 @@ final class NiriSettings {
         moveWindowStacksIntoColumn = niri.moveWindowStacksIntoColumn ?? baseline.moveWindowStacksIntoColumn ?? true
         naturalWindowDrag = niri.naturalWindowDrag ?? baseline.naturalWindowDrag ?? false
         naturalWindowDragModifier = niri.naturalWindowDragModifier ?? baseline.naturalWindowDragModifier ?? .option
+        edgePeek = niri.edgePeek ?? baseline.edgePeek ?? false
+        edgePeekPercent = NiriSettings.validatedEdgePeekPercent(
+            niri.edgePeekPercent ?? baseline.edgePeekPercent ?? BuiltInSettingsDefaults.niriEdgePeekPercent
+        )
         resizeStepPercent = niri.resizeStepPercent ?? baseline.resizeStepPercent ?? BuiltInSettingsDefaults
             .niriResizeStepPercent
         containerPrimarySpanPresets = NiriSettings.validatedContainerPrimarySpanPresets(
