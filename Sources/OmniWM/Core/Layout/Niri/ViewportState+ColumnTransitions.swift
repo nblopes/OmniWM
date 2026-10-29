@@ -13,6 +13,7 @@ extension ViewportState {
         centerMode: CenterFocusedColumn,
         alwaysCenterSingleColumn: Bool = false,
         fromColumnIndex: Int? = nil,
+        keepsStripEndsOnScreen: Bool = false,
         scale: CGFloat = 2.0,
         viewFrame: CGRect? = nil
     ) {
@@ -54,13 +55,13 @@ extension ViewportState {
             centerMode: centerMode,
             alwaysCenterSingleColumn: alwaysCenterSingleColumn,
             fromContainerIndex: fromColumnIndex ?? prevActiveColumn,
+            keepsStripEndsOnScreen: keepsStripEndsOnScreen,
             scale: scale,
             viewFrame: viewFrame
         )
 
-        let pixel: CGFloat = 1.0 / max(scale, 1.0)
         let toDiff = targetOffset - viewOffset
-        if abs(toDiff) < pixel {
+        if abs(toDiff) < 1.0 / max(scale, 1.0) {
             rebaseOffset(by: toDiff)
             activatePrevColumnOnRemoval = nil
             viewOffsetToRestore = nil
