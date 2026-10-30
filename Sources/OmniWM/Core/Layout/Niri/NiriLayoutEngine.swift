@@ -136,6 +136,8 @@ final class NiriLayoutEngine {
 
     var keepsStripEndsOnScreen = false
 
+    var clipsOverflowToDisplay = false
+
     var edgePeekShare: CGFloat?
 
     var defaultContainerPrimarySpan: CGFloat? = 0.5
@@ -309,6 +311,7 @@ final class NiriLayoutEngine {
         if let naturalWindowDrag {
             tabbedColumnsFillHeight = naturalWindowDrag
             keepsStripEndsOnScreen = naturalWindowDrag
+            clipsOverflowToDisplay = naturalWindowDrag
             if !naturalWindowDrag {
                 forgetTopRests()
             }
