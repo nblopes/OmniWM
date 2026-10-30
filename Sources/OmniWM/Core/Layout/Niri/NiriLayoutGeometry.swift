@@ -70,19 +70,22 @@ struct NiriLayoutViewport {
     private let workspaceOffset: CGFloat
     private let viewPositions: [CGFloat]
     private let revealMargin: CGFloat
+    private let clipsOverflowToDisplay: Bool
 
     init(
         area: WorkingAreaContext,
         orientation: Monitor.Orientation,
         workspaceOffset: CGFloat,
         viewPositions: [CGFloat],
-        revealMargin: CGFloat
+        revealMargin: CGFloat,
+        clipsOverflowToDisplay: Bool = false
     ) {
         self.area = area
         self.orientation = orientation
         self.workspaceOffset = workspaceOffset
         self.viewPositions = viewPositions
         self.revealMargin = revealMargin
+        self.clipsOverflowToDisplay = clipsOverflowToDisplay
     }
 
     func columnVisibility(
@@ -123,7 +126,8 @@ struct NiriLayoutViewport {
                 viewportFrame: area.workingFrame,
                 orientation: orientation,
                 hiddenPlacementMonitor: hiddenPlacementMonitor,
-                hiddenPlacementMonitors: hiddenPlacementMonitors
+                hiddenPlacementMonitors: hiddenPlacementMonitors,
+                clipsToDisplay: clipsOverflowToDisplay
             ) {
                 visibilityState = .hidden(liveOverflowEdge)
             }
@@ -193,7 +197,8 @@ struct NiriLayoutViewport {
             viewportFrame: area.workingFrame,
             orientation: orientation,
             hiddenPlacementMonitor: hiddenPlacementMonitor,
-            hiddenPlacementMonitors: hiddenPlacementMonitors
+            hiddenPlacementMonitors: hiddenPlacementMonitors,
+            clipsToDisplay: clipsOverflowToDisplay
         ) {
             return .hidden(overflowEdge)
         }
