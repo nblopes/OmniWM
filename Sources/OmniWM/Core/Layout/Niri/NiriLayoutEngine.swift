@@ -50,7 +50,7 @@ final class NiriLayoutEngine {
             guard let previous = oldValue, let dropSpaceId = previous.dropSpaceId,
                   liveColumnMove?.dropSpaceId != dropSpaceId
             else { return }
-            columns(in: previous.workspaceId).first { $0.id == dropSpaceId }?.remove()
+            liveDropSpace(for: previous)?.remove()
         }
     }
 
