@@ -140,6 +140,8 @@ final class NiriLayoutEngine {
 
     var keepsStripEndsOnScreen = false
 
+    var clipsOverflowToDisplay = false
+
     var edgePeekShare: CGFloat?
 
     var defaultContainerPrimarySpan: CGFloat? = 0.5

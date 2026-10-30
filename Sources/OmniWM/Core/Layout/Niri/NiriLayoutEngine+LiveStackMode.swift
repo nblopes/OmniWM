@@ -598,6 +598,7 @@ extension NiriLayoutEngine {
     func applyNaturalWindowDrag(_ configuration: NaturalWindowDragConfiguration) {
         tabbedColumnsFillHeight = configuration.enabled
         keepsStripEndsOnScreen = configuration.enabled
+        clipsOverflowToDisplay = configuration.enabled
         edgePeekShare = configuration.edgePeekShare
         if !configuration.enabled {
             forgetTopRests()
