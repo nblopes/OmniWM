@@ -46,10 +46,11 @@ final class NiriLiveColumnMoveTests: XCTestCase {
 
         func landingOrder() -> [WindowToken] {
             guard let move = engine.liveColumnMove, engine.liveDropSpace(for: move) != nil else { return order() }
-            return engine.columns(in: workspaceId).compactMap { column in
-                if column.isLiveDropSpace { return move.windowToken }
-                let token = column.windowNodes.first?.token
-                return token == move.windowToken ? nil : token
+            let columns = engine.columns(in: workspaceId)
+            let dragged = columns.first { $0.windowNodes.contains { $0.token == move.windowToken } }
+            return columns.compactMap { column in
+                if column.isLiveDropSpace { return dragged?.windowNodes.first?.token }
+                return column === dragged ? nil : column.windowNodes.first?.token
             }
         }
 
@@ -97,6 +98,16 @@ final class NiriLiveColumnMoveTests: XCTestCase {
             engine.liveColumnMoveBegin(
                 windowId: window(index).id,
                 windowToken: tokens[index],
+                context: context,
+                state: &state
+            )
+        }
+
+        mutating func beginActiveTab(_ index: Int) -> Bool {
+            guard let shown = column(index).activeWindow else { return false }
+            return engine.liveColumnMoveBegin(
+                windowId: shown.id,
+                windowToken: shown.token,
                 context: context,
                 state: &state
             )
@@ -1802,7 +1813,7 @@ final class NiriLiveColumnMoveTests: XCTestCase {
         var tabbed = makeFixture()
         let column = tabbed.makeTabbed(1)
         XCTAssertEqual(column.windowNodes.count, 3)
-        XCTAssertTrue(tabbed.begin(1))
+        XCTAssertTrue(tabbed.beginActiveTab(1))
         XCTAssertEqual(tabbed.state.activeColumnIndex, 1)
 
         var stacked = makeFixture()
@@ -1823,7 +1834,7 @@ final class NiriLiveColumnMoveTests: XCTestCase {
             var fixture = makeFixture()
             let column = fixture.makeTabbed(dragged)
             let tabs = tabbedSnapshot(column, in: fixture)
-            XCTAssertTrue(fixture.begin(dragged))
+            XCTAssertTrue(fixture.beginActiveTab(dragged))
 
             XCTAssertEqual(
                 fixture.moveAndSettle(to: fixture.farHalf(of: target)),
@@ -1841,6 +1852,7 @@ final class NiriLiveColumnMoveTests: XCTestCase {
             XCTAssertEqual(fixture.order(), [0, 1, 3, 2, 4].map { fixture.tokens[$0] }, "\(dragged)")
             XCTAssertEqual(fixture.engine.columnIndex(of: column, in: fixture.workspaceId), target, "\(dragged)")
             XCTAssertEqual(tabbedSnapshot(column, in: fixture), tabs, "\(dragged)")
+            XCTAssertEqual(fixture.state.selectedNodeId, column.activeWindow?.id, "\(dragged)")
             XCTAssertFalse(fixture.engine.columns(in: fixture.workspaceId).contains { $0.isLiveDropSpace })
         }
     }
@@ -1851,7 +1863,7 @@ final class NiriLiveColumnMoveTests: XCTestCase {
         let tabs = tabbedSnapshot(column, in: fixture)
         let span = fixture.stripColumn(holding: 3).maxX - fixture.stripColumn(holding: 3).minX
         fixture.scrollSoThat(3, startsAt: fixture.frame.maxX - span / 2)
-        XCTAssertTrue(fixture.begin(2))
+        XCTAssertTrue(fixture.beginActiveTab(2))
 
         XCTAssertEqual(
             fixture.moveAndSettle(to: CGPoint(x: fixture.frame.maxX - span / 4, y: fixture.midY)),
@@ -1870,7 +1882,7 @@ final class NiriLiveColumnMoveTests: XCTestCase {
         let dragged = fixture.makeTabbed(2)
         let railWidth = fixture.engine.renderStyle.tabIndicatorWidth
         XCTAssertGreaterThan(railWidth, 0)
-        XCTAssertTrue(fixture.begin(2))
+        XCTAssertTrue(fixture.beginActiveTab(2))
         XCTAssertEqual(
             fixture.moveAndSettle(to: fixture.farHalf(of: 3)),
             .changed
@@ -1910,7 +1922,7 @@ final class NiriLiveColumnMoveTests: XCTestCase {
         let tabs = tabbedSnapshot(column, in: fixture)
         let widths = fixture.engine.columns(in: fixture.workspaceId)
             .map { fixture.engine.containerSizingState(for: $0) }
-        XCTAssertTrue(fixture.begin(2))
+        XCTAssertTrue(fixture.beginActiveTab(2))
         XCTAssertEqual(
             fixture.moveAndSettle(to: fixture.farHalf(of: 3)),
             .changed
@@ -1935,7 +1947,7 @@ final class NiriLiveColumnMoveTests: XCTestCase {
         let other = fixture.makeTabbed(4, tabCount: 2, activeTab: 0)
         XCTAssertFalse(fixture.engine.isLiveDraggedColumn(dragged))
 
-        XCTAssertTrue(fixture.begin(2))
+        XCTAssertTrue(fixture.beginActiveTab(2))
         XCTAssertTrue(fixture.engine.isLiveDraggedColumn(dragged))
         XCTAssertFalse(fixture.engine.isLiveDraggedColumn(other))
 
