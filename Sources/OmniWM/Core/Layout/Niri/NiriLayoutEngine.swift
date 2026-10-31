@@ -45,15 +45,33 @@ final class NiriLayoutEngine {
 
     var interactiveResize: InteractiveResize?
     var interactiveMove: InteractiveMove?
+    var liveStackProbe: LiveColumnMove.StackProbe?
     var liveColumnMove: LiveColumnMove? {
         didSet {
+            liveStackProbe = nil
             if let slot = oldValue?.narrowedSlot, liveColumnMove?.narrowedSlot?.columnId != slot.columnId {
                 widenLiveSlot(slot, in: oldValue?.workspaceId)
             }
-            guard let previous = oldValue, let dropSpaceId = previous.dropSpaceId,
-                  liveColumnMove?.dropSpaceId != dropSpaceId
-            else { return }
-            liveDropSpace(for: previous)?.remove()
+            guard let previous = oldValue else { return }
+            if let dropSpaceId = previous.dropSpaceId,
+               liveColumnMove?.dropSpaceId != dropSpaceId,
+               liveStackDrop?.dropSpaceId != dropSpaceId
+            {
+                removeLivePlaceholder(dropSpaceId, in: previous.workspaceId)
+            }
+            if liveColumnMove == nil, liveStackDrop?.homeColumnId != previous.homeColumnId {
+                removeLivePlaceholder(previous.homeColumnId, in: previous.workspaceId)
+            }
+        }
+    }
+
+    var liveStackDrop: LiveColumnMove.StackDrop? {
+        didSet {
+            guard let previous = oldValue, liveStackDrop == nil else { return }
+            removeLivePlaceholder(previous.homeColumnId, in: previous.workspaceId)
+            if let dropSpaceId = previous.dropSpaceId {
+                removeLivePlaceholder(dropSpaceId, in: previous.workspaceId)
+            }
         }
     }
 
@@ -81,6 +99,9 @@ final class NiriLayoutEngine {
         if liveColumnMove?.workspaceId == workspaceId {
             liveColumnMove = nil
         }
+        if liveStackDrop?.workspaceId == workspaceId {
+            liveStackDrop = nil
+        }
     }
 
     func cancelInteractions(for windowIds: Set<NodeId>, in workspaceId: WorkspaceDescriptor.ID) {
@@ -102,12 +123,26 @@ final class NiriLayoutEngine {
         {
             liveColumnMove = nil
         }
+        if let drop = liveStackDrop,
+           drop.workspaceId == workspaceId,
+           windowIds.contains(drop.windowId)
+        {
+            liveStackDrop = nil
+        }
     }
 
     var presetContainerPrimarySpans: [PresetSize] = NiriLayoutEngine.defaultPresetContainerPrimarySpans
     var presetWindowSecondarySpans: [PresetSize] = NiriLayoutEngine.defaultPresetWindowSecondarySpans {
         didSet {
             if oldValue != presetWindowSecondarySpans {
+                axisSolveConfigurationRevision &+= 1
+            }
+        }
+    }
+
+    var tabbedColumnsFillHeight = false {
+        didSet {
+            if oldValue != tabbedColumnsFillHeight {
                 axisSolveConfigurationRevision &+= 1
             }
         }
@@ -276,9 +311,13 @@ final class NiriLayoutEngine {
         singleWindowFit: SingleWindowFit? = nil,
         edgeOverscroll: NiriEdgeOverscroll? = nil,
         presetContainerPrimarySpans: [PresetSize]? = nil,
-        defaultContainerPrimarySpan: CGFloat?? = nil
+        defaultContainerPrimarySpan: CGFloat?? = nil,
+        tabbedColumnsFillHeight: Bool? = nil
     ) {
         assertSanctionedMutation()
+        if let tabbedColumnsFillHeight {
+            self.tabbedColumnsFillHeight = tabbedColumnsFillHeight
+        }
         if let max = visibleContainerCount {
             self.visibleContainerCount = max.clamped(to: 1 ... 5)
         }
@@ -374,7 +413,7 @@ extension NiriLayoutEngine {
         return containerSizingState(for: column)
     }
 
-    private func applyContainerSizingState(_ state: NiriContainerSizingState, to column: NiriContainer) {
+    func applyContainerSizingState(_ state: NiriContainerSizingState, to column: NiriContainer) {
         column.width = state.width
         column.presetWidthIdx = state.presetWidthIndex
         column.isFullWidth = state.isFullWidth
