@@ -10,6 +10,7 @@ struct TapFilterSnapshot: Sendable {
     var claimedOtherButtonMask: UInt32 = 0
     var moveModifier: CGEventFlags?
     var naturalDragModifier: CGEventFlags?
+    var naturalWindowDrag = false
     var resizeModifier: CGEventFlags = []
     var scrollModifier: CGEventFlags = []
     var minGestureFingers: Int = 3
@@ -340,7 +341,7 @@ extension InputTapThread {
         if MouseEventHandler.asksAboutNaturalDoubleClick(
             clickCount: clickCount,
             flags: flags,
-            naturalDragModifier: snap.naturalDragModifier,
+            naturalWindowDrag: snap.naturalWindowDrag,
             armedAt: snap.naturalDoubleClickArmedAt,
             location: location
         ) {

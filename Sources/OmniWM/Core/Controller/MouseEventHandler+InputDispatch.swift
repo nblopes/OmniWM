@@ -208,7 +208,8 @@ extension MouseEventHandler {
         at location: CGPoint,
         modifiers: CGEventFlags,
         button: MouseButton = .left,
-        clickCount: Int64 = 1
+        clickCount: Int64 = 1,
+        authoritative: Bool = false
     ) -> Bool {
         if button == .left {
             armNaturalDoubleClick(at: location, modifiers: modifiers, clickCount: clickCount)
@@ -227,7 +228,9 @@ extension MouseEventHandler {
                 retireNativeTitleBarDragAtInputBoundary()
             }
         }
-        if button == .left, clickCount == 2, handleNaturalDoubleClick(at: location, modifiers: modifiers) {
+        if authoritative, button == .left, clickCount == 2,
+           handleNaturalDoubleClick(at: location, modifiers: modifiers)
+        {
             return true
         }
         return dispatchMouseDown(

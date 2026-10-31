@@ -306,6 +306,9 @@ final class NiriLayoutEngine {
         if let naturalWindowDrag {
             tabbedColumnsFillHeight = naturalWindowDrag
             keepsStripEndsOnScreen = naturalWindowDrag
+            if !naturalWindowDrag {
+                forgetTopRests()
+            }
         }
         if let max = visibleContainerCount {
             self.visibleContainerCount = max.clamped(to: 1 ... 5)
