@@ -235,10 +235,14 @@ extension MouseEventHandler {
                 retireNativeTitleBarDragAtInputBoundary()
             }
         }
-        if authoritative, button == .left, clickCount == 2,
-           handleNaturalDoubleClick(at: location, modifiers: modifiers)
+        if authoritative, button == .left,
+           clickCount == 2 || continuesNaturalClickChain(at: location, modifiers: modifiers),
+           handleNaturalDoubleClick(at: location, modifiers: modifiers, chained: clickCount != 2)
         {
             return true
+        }
+        if button == .left {
+            disarmNaturalClickChain()
         }
         return dispatchMouseDown(
             at: location,
