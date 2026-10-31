@@ -83,6 +83,7 @@ final class NiriLayoutEngine {
             clearInteractiveResize()
         }
         if liveColumnMove?.workspaceId == workspaceId {
+            restoreWidenedLiveColumn(liveColumnMove?.carry?.widenedColumn)
             liveColumnMove = nil
         }
         if liveStackDrop?.workspaceId == workspaceId {
@@ -107,6 +108,7 @@ final class NiriLayoutEngine {
            live.workspaceId == workspaceId,
            windowIds.contains(live.windowId)
         {
+            restoreWidenedLiveColumn(live.carry?.widenedColumn)
             liveColumnMove = nil
         }
         if let drop = liveStackDrop,
@@ -309,12 +311,7 @@ final class NiriLayoutEngine {
     ) {
         assertSanctionedMutation()
         if let naturalWindowDrag {
-            tabbedColumnsFillHeight = naturalWindowDrag
-            keepsStripEndsOnScreen = naturalWindowDrag
-            clipsOverflowToDisplay = naturalWindowDrag
-            if !naturalWindowDrag {
-                forgetTopRests()
-            }
+            applyNaturalWindowDrag(naturalWindowDrag)
         }
         if let edgePeekShare {
             self.edgePeekShare = edgePeekShare
@@ -471,6 +468,17 @@ extension NiriLayoutEngine {
         presetContainerPrimarySpans.firstIndex { preset in
             guard case let .proportion(presetWidth) = preset.kind else { return false }
             return abs(presetWidth - width) <= Self.presetMatchTolerance
+        }
+    }
+}
+
+extension NiriLayoutEngine {
+    func applyNaturalWindowDrag(_ enabled: Bool) {
+        tabbedColumnsFillHeight = enabled
+        keepsStripEndsOnScreen = enabled
+        clipsOverflowToDisplay = enabled
+        if !enabled {
+            forgetTopRests()
         }
     }
 }

@@ -146,6 +146,7 @@ extension WMController {
             edgePeekShare: .some(edgePeekShare)
         )
         mouseEventHandler.syncTapFilterSnapshot()
+        updateHotkeyBindings(settings.hotkeyBindings)
     }
 
     private func applyPersistedLayoutSettings(_ settings: SettingsStore) {

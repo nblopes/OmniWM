@@ -177,7 +177,7 @@ extension WMController {
     }
 
     func updateHotkeyBindings(_ bindings: [HotkeyBinding], force: Bool = false) {
-        let enabledBindings = bindings.filter { settings.isCommandFeatureEnabled($0.command) }
+        let enabledBindings = bindings.filter { settings.registersHotkey(for: $0.command) }
         hotkeys.updateBindings(
             enabledBindings,
             systemHyperTrigger: settings.systemHyperTrigger,

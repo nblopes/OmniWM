@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 // Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
+import Carbon
 import CoreGraphics
 @testable import OmniWM
 import XCTest
@@ -859,6 +860,39 @@ final class NativeResizeAdoptionTests: NiriInteractionTestCase {
             XCTAssertEqual(try fixture.frames(), before, "natural=\(natural)")
             XCTAssertFalse(fixture.handler.undoNativeResize(on: try fixture.target(token)), "natural=\(natural)")
         }
+    }
+
+    func testUndoResizeIsRegisteredOnlyWithNaturalWindowDragAndKeepsItsBinding() throws {
+        let fixture = try makeFixture(.niri, pid: 834_090)
+        let controller = fixture.controller
+        let registered = { controller.hotkeys.configuration.bindings.contains { $0.id == "undoResize" } }
+        XCTAssertNotNil(controller.settings.hotkeyBindings.first { $0.id == "undoResize" })
+
+        controller.settings.niri.naturalWindowDrag = false
+        controller.applyNaturalWindowDragSettings()
+        XCTAssertFalse(controller.settings.registersHotkey(for: .sizing(.undoResize)))
+        XCTAssertFalse(registered())
+        XCTAssertNotNil(controller.settings.hotkeyBindings.first { $0.id == "undoResize" })
+
+        controller.settings.niri.naturalWindowDrag = true
+        controller.applyNaturalWindowDragSettings()
+        XCTAssertTrue(controller.settings.registersHotkey(for: .sizing(.undoResize)))
+        XCTAssertTrue(registered())
+    }
+
+    func testCapturedChordsKeepTheirModifierSideAndSidesCanBeSet() throws {
+        let fixture = try makeFixture(.niri, pid: 834_091)
+        let settings = fixture.controller.settings
+        let chord = KeyBinding(keyCode: 6, modifiers: UInt32(optionKey | cmdKey))
+        settings.updateTrigger(for: "undoResize", newTrigger: .chord(chord.settingSide(.right)))
+
+        let replacement = KeyBinding(keyCode: 7, modifiers: UInt32(optionKey | cmdKey))
+        let kept = HotkeyBindingEditor.triggerKeepingSide(.chord(replacement), for: "undoResize", settings: settings)
+        XCTAssertEqual(kept.chordBinding, replacement.settingSide(.right))
+        XCTAssertEqual(
+            HotkeyBindingEditor.trigger(for: "undoResize", side: .left, settings: settings)?.chordBinding,
+            chord.settingSide(.left)
+        )
     }
 
     func testUndoResizeActsOnTheFocusedWindow() throws {
