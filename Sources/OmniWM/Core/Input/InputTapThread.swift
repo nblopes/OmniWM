@@ -9,6 +9,7 @@ struct TapFilterSnapshot: Sendable {
     var activeCapture: MouseEventHandler.MouseButton?
     var claimedOtherButtonMask: UInt32 = 0
     var moveModifier: CGEventFlags?
+    var naturalDragModifier: CGEventFlags?
     var resizeModifier: CGEventFlags = []
     var scrollModifier: CGEventFlags = []
     var minGestureFingers: Int = 3
@@ -160,6 +161,10 @@ final class InputTapThread: @unchecked Sendable {
         switch type {
         case .leftMouseDown:
             let flags = event.flags
+            event.flags = MouseEventHandler.naturalDragPassThroughFlags(
+                flags,
+                naturalDragModifier: snap.naturalDragModifier
+            )
             let isMoveCandidate = MouseEventHandler.mouseMoveModifiersMatch(flags, required: snap.moveModifier)
             guard isMoveCandidate else {
                 DispatchQueue.main.async {
