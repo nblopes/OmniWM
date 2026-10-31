@@ -10,6 +10,10 @@ extension SettingsStore {
         }
     }
 
+    func registersHotkey(for command: HotkeyCommand) -> Bool {
+        isCommandFeatureEnabled(command) && (command != .sizing(.undoResize) || niri.naturalWindowDrag)
+    }
+
     func updateBinding(for commandId: String, newBinding: KeyBinding) {
         updateTrigger(for: commandId, newTrigger: newBinding.isUnassigned ? .unassigned : .chord(newBinding))
     }
