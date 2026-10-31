@@ -8,6 +8,7 @@ final class TabRailManager {
     typealias SelectionHandler = (TabRailInfo, Int, WindowToken?) -> Void
 
     var onSelect: SelectionHandler?
+    var onDrag: ((TabRailDrag) -> Void)?
 
     private var railWindows: [TabRailKey: TabRailWindow] = [:]
     private var railInfos: [TabRailKey: TabRailInfo] = [:]
@@ -87,6 +88,9 @@ final class TabRailManager {
             )
             window.onSelect = { [weak self] info, visualIndex, token in
                 self?.onSelect?(info, visualIndex, token)
+            }
+            window.onDrag = { [weak self] drag in
+                self?.onDrag?(drag)
             }
             railWindows[key] = window
             return window

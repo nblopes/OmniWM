@@ -71,7 +71,7 @@ final class NiriLiveColumnMoveTests: XCTestCase {
             let placed = stripColumn(holding: index)
             let columns = engine.columns(in: workspaceId)
             guard let move = engine.liveColumnMove,
-                  let home = columns.firstIndex(where: { $0.windowNodes.contains { $0.id == move.windowId } }),
+                  let home = columns.firstIndex(where: { $0.id == move.homeColumnId }),
                   let target = columns.firstIndex(where: { $0 === placed.column }),
                   home != target
             else { return CGPoint(x: placed.midX, y: midY) }
@@ -238,17 +238,7 @@ final class NiriLiveColumnMoveTests: XCTestCase {
         XCTAssertEqual(fixture.state.activeColumnIndex, 1)
     }
 
-    func testBeginRefusesStackedWindowsSingleColumnsAndVerticalStrips() {
-        var stacked = makeFixture()
-        stacked.engine.attachTransferredWindow(
-            NiriWindow(token: WindowToken(pid: 931, windowId: 99)),
-            stackedWith: stacked.window(1),
-            after: true,
-            in: stacked.workspaceId,
-            state: &stacked.state
-        )
-        XCTAssertFalse(stacked.begin(1))
-
+    func testBeginRefusesSingleColumnsAndVerticalStrips() {
         var single = makeFixture(widths: [0.5], activeIndex: 0)
         XCTAssertFalse(single.begin(0))
 
@@ -593,7 +583,7 @@ final class NiriLiveColumnMoveTests: XCTestCase {
         let releasedAt = fixture.stripColumn(holding: 3).maxX - 150
 
         XCTAssertTrue(fixture.engine.liveColumnMoveEnd(
-            releasedAtScreenX: releasedAt,
+            releasedFrame: CGRect(x: releasedAt, y: 0, width: 0, height: 0),
             context: animated,
             state: &fixture.state
         ))
@@ -780,7 +770,11 @@ final class NiriLiveColumnMoveTests: XCTestCase {
         XCTAssertEqual(fixture.landingOrder(), [0, 2, 1, 3].map { fixture.tokens[$0] })
 
         let back = CGPoint(x: further.x - third - 10, y: fixture.midY)
-        XCTAssertTrue(fixture.engine.liveColumnMoveEnd(pointer: back, context: fixture.context, state: &fixture.state))
+        XCTAssertTrue(fixture.engine.liveColumnMoveEnd(
+            releasedAt: back,
+            context: fixture.context,
+            state: &fixture.state
+        ))
 
         XCTAssertEqual(fixture.order(), fixture.tokens)
     }
@@ -800,7 +794,7 @@ final class NiriLiveColumnMoveTests: XCTestCase {
 
         XCTAssertEqual(fixture.landingOrder(), [0, 2, 1, 3].map { fixture.tokens[$0] })
         XCTAssertTrue(fixture.engine.liveColumnMoveEnd(
-            pointer: wobble,
+            releasedAt: wobble,
             context: fixture.context,
             state: &fixture.state
         ))
@@ -1621,7 +1615,7 @@ final class NiriLiveColumnMoveTests: XCTestCase {
             _ = fixture.move(to: nearEdge, at: 10.01)
 
             XCTAssertTrue(fixture.engine.liveColumnMoveEnd(
-                pointer: nearEdge,
+                releasedAt: nearEdge,
                 context: fixture.context,
                 state: &fixture.state
             ))
@@ -1641,7 +1635,7 @@ final class NiriLiveColumnMoveTests: XCTestCase {
         XCTAssertEqual(fixture.landingOrder(), [0, 1, 2, 4, 3, 5, 6].map { fixture.tokens[$0] })
 
         XCTAssertTrue(fixture.engine.liveColumnMoveEnd(
-            pointer: cursor,
+            releasedAt: cursor,
             context: fixture.context,
             state: &fixture.state
         ))
@@ -1809,7 +1803,7 @@ final class NiriLiveColumnMoveTests: XCTestCase {
         )
     }
 
-    func testBeginAcceptsATabbedColumnAndStillRefusesAStack() {
+    func testBeginTakesATabbedColumnWholeAndAStackedWindowOnItsOwn() {
         var tabbed = makeFixture()
         let column = tabbed.makeTabbed(1)
         XCTAssertEqual(column.windowNodes.count, 3)
@@ -1825,8 +1819,9 @@ final class NiriLiveColumnMoveTests: XCTestCase {
             state: &stacked.state
         )
         XCTAssertFalse(stacked.column(1).isTabbed)
-        XCTAssertFalse(stacked.begin(1))
-        XCTAssertNil(stacked.engine.liveColumnMove)
+        XCTAssertTrue(stacked.begin(1))
+        XCTAssertEqual(stacked.engine.liveColumnMove?.isWholeColumn, false)
+        XCTAssertEqual(stacked.engine.liveColumnMove?.inStack, true)
     }
 
     func testATabbedColumnLandsPastAVisibleNeighbourAndKeepsItsTabsOnRelease() {
@@ -1899,7 +1894,7 @@ final class NiriLiveColumnMoveTests: XCTestCase {
         let releasedWindowX = fixture.stripColumn(holding: 3).maxX - 150
 
         XCTAssertTrue(fixture.engine.liveColumnMoveEnd(
-            releasedAtScreenX: releasedWindowX,
+            releasedFrame: CGRect(x: releasedWindowX, y: 0, width: 0, height: 0),
             context: animated,
             state: &fixture.state
         ))

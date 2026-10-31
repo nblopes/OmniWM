@@ -80,6 +80,12 @@ struct MouseInputState {
         }
     }
 
+    struct LiveTabPull {
+        let token: WindowToken
+        let anchorLocation: CGPoint
+        let startFrame: CGRect
+    }
+
     struct LiveDropScroll {
         let token: WindowToken
         let workspaceId: WorkspaceDescriptor.ID
@@ -109,6 +115,8 @@ struct MouseInputState {
     var isResizing: Bool = false
     var isMoving: Bool = false
     var liveDragLocation: CGPoint?
+    var liveDragModifiers: CGEventFlags?
+    var liveTabPull: LiveTabPull?
     var liveDropScroll: LiveDropScroll?
     var liveHoverTimer: Timer?
     var liveEdgeScroll: LiveEdgeScroll?

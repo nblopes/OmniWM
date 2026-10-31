@@ -84,7 +84,9 @@ extension NiriLayoutHandler {
                 windows: windows,
                 activeVisualIndex: activeVisualIndex,
                 controller: controller
-            )
+            ).map { tab in
+                tab.token.map { engine.isLiveDraggedWindow($0, in: workspaceId) } == true ? Self.blankTab(tab) : tab
+            }
             let candidateFrame = column.renderedFrame ?? column.frame
             let frame = candidateFrame.map {
                 !$0.isNull && !$0.isInfinite && $0.width > 0 && $0.height > 0 ? $0 : .zero
@@ -106,6 +108,17 @@ extension NiriLayoutHandler {
             )
         }
         return infos
+    }
+
+    private static func blankTab(_ tab: TabRailTabInfo) -> TabRailTabInfo {
+        TabRailTabInfo(
+            visualIndex: tab.visualIndex,
+            token: nil,
+            windowId: nil,
+            appName: nil,
+            title: nil,
+            isActive: tab.isActive
+        )
     }
 
     private func tabbedColumnTabs(

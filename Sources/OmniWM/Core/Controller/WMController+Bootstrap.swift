@@ -61,6 +61,10 @@ extension WMController {
         secureInputIndicator.openHotkeysSettings = { [weak self] in
             self?.statusBarController?.openSettings(section: .hotkeys)
         }
+        tabRailManager.onDrag = { [weak self] drag in
+            guard case .niriColumn = drag.info.owner else { return }
+            self?.mouseEventHandler.handleTabRailDrag(drag)
+        }
         tabRailManager.onSelect = { [weak self] info, visualIndex, token in
             guard let self else { return }
             switch info.owner {

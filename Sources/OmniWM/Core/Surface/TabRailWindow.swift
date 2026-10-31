@@ -19,6 +19,7 @@ final class TabRailWindow: NSPanel {
     private var accessibilityDisplayObserver: NSObjectProtocol?
 
     var onSelect: ((TabRailInfo, Int, WindowToken?) -> Void)?
+    var onDrag: ((TabRailDrag) -> Void)?
 
     init(
         owner: TabRailOwner, workspaceId: WorkspaceDescriptor.ID, motionPolicy: MotionPolicy,
@@ -52,6 +53,9 @@ final class TabRailWindow: NSPanel {
             guard let self, let currentInfo else { return }
             let token = currentInfo.tabs.first(where: { $0.visualIndex == visualIndex })?.token
             self.onSelect?(currentInfo, visualIndex, token)
+        }
+        railView.onDrag = { [weak self] event, location in
+            self?.forwardDrag(event, at: location)
         }
         railView.onHoverChange = { [weak self] tab, itemRect in
             self?.updateHoverCard(tab: tab, itemRect: itemRect)
@@ -97,6 +101,18 @@ final class TabRailWindow: NSPanel {
     override func convertToScreen(_ rect: NSRect) -> NSRect {
         let origin = appliedFrame.origin
         return rect.offsetBy(dx: origin.x, dy: origin.y)
+    }
+
+    private func forwardDrag(_ event: TabRailDragGesture.Event, at location: CGPoint) {
+        guard let currentInfo else { return }
+        let token = currentInfo.tabs.first(where: { $0.visualIndex == event.visualIndex })?.token
+        onDrag?(TabRailDrag(
+            info: currentInfo,
+            visualIndex: event.visualIndex,
+            token: token,
+            location: location,
+            pressLocation: event.pressPoint
+        ))
     }
 
     func update(info: TabRailInfo, forceOrdering: Bool, style: TabRailStyle = .compact) {

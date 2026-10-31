@@ -120,6 +120,7 @@ struct SettingsExport: Equatable {
         var allowOverscroll: Bool?
         var overscrollVisibleStripPercent: Int?
         var naturalWindowDrag: Bool?
+        var naturalWindowDragModifier: MouseMoveModifierKey?
     }
 
     struct Dwindle: Codable, Equatable {
