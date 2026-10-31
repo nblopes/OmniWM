@@ -153,6 +153,7 @@ extension ViewportFittingAreas {
         gap: CGFloat
     ) -> CGFloat {
         guard target.mode == .normal,
+              edgePeeks != nil,
               let viewStart = viewStartShowingEdgePeeks(
                   target.position + offset,
                   spans: containers.map { $0[keyPath: orientation.settledSpanKeyPath] },
