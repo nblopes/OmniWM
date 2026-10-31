@@ -59,6 +59,7 @@ extension MouseEventHandler {
         edgeScroll.isScrolling = true
         edgeScroll.strip = nil
         state.liveEdgeScroll = edgeScroll
+        MouseTrace.record("live-drag edge-scroll start edge=\(edgeScroll.edge) ws=\(workspaceId) limit=\(Int(limit))")
         controller.workspaceManager.withNiriViewportState(for: workspaceId) { viewportState in
             _ = engine.liveColumnMoveCloseLandingForEdgeScroll(context: context, state: &viewportState)
         }
@@ -135,6 +136,30 @@ extension MouseEventHandler {
     func clearLiveEdgeZone() {
         state.liveEdgeZoneHold = nil
         endLiveEdgeScroll()
+    }
+
+    func publishLiveDragHold(on monitor: Monitor, workspaceId: WorkspaceDescriptor.ID) {
+        guard let controller,
+              let engine = controller.niriEngine,
+              let context = liveColumnContext(for: workspaceId)
+        else {
+            controller?.pointerEdgeBarrier.publishLiveDragHold(nil)
+            return
+        }
+        let viewportState = controller.workspaceManager.niriViewportState(for: workspaceId)
+        let scrollingEdge = isLiveEdgeScrolling ? state.liveEdgeScroll?.edge : nil
+        var held: Set<Direction> = []
+        if scrollingEdge == .trailing
+            || engine.liveEdgeScrollLimit(towardTrailingEdge: true, context: context, state: viewportState) != nil
+        {
+            held.insert(.right)
+        }
+        if scrollingEdge == .leading
+            || engine.liveEdgeScrollLimit(towardTrailingEdge: false, context: context, state: viewportState) != nil
+        {
+            held.insert(.left)
+        }
+        controller.pointerEdgeBarrier.publishLiveDragHold(.init(monitorId: monitor.id, heldDirections: held))
     }
 
     func endLiveEdgeScroll() {
