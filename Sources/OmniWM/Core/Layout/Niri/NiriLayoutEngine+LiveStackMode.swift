@@ -217,6 +217,7 @@ extension NiriLayoutEngine {
     @discardableResult
     func placeLiveLanding(
         _ landing: LiveColumnMove.Landing?,
+        height fixedHeight: CGFloat? = nil,
         move: inout LiveColumnMove,
         context: NiriInteractionContext,
         state: inout ViewportState
@@ -233,7 +234,11 @@ extension NiriLayoutEngine {
             guard relocateLiveWindow(window, to: landing, from: source, move: move, context: context) else {
                 return false
             }
-            shareLiveColumn(target, with: window, move: &move)
+            if let fixedHeight {
+                window.height = .fixed(fixedHeight)
+            } else {
+                shareLiveColumn(target, with: window, move: &move)
+            }
             return true
         }
         guard placed else { return false }
