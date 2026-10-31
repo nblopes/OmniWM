@@ -87,6 +87,7 @@ final class NiriLayoutEngine {
             clearInteractiveResize()
         }
         if liveColumnMove?.workspaceId == workspaceId {
+            restoreWidenedLiveColumn(liveColumnMove?.carry?.widenedColumn)
             liveColumnMove = nil
         }
         if liveStackDrop?.workspaceId == workspaceId {
@@ -111,6 +112,7 @@ final class NiriLayoutEngine {
            live.workspaceId == workspaceId,
            windowIds.contains(live.windowId)
         {
+            restoreWidenedLiveColumn(live.carry?.widenedColumn)
             liveColumnMove = nil
         }
         if let drop = liveStackDrop,
