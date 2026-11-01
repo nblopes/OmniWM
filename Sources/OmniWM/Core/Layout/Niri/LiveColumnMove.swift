@@ -160,13 +160,7 @@ struct LiveColumnMove {
     struct StackMember: Equatable {
         let windowId: NodeId
         let sizing: WindowSizing
-        let offsetY: CGFloat
         let height: CGFloat
-    }
-
-    struct FollowAnchor: Equatable {
-        let frame: CGRect
-        let pointer: CGPoint
     }
 
     struct OriginalSlot: Equatable {
@@ -232,8 +226,6 @@ struct LiveColumnMove {
     var sideBySideIds: Set<NodeId> = []
     var carry: Carry?
     var stackMembers: [StackMember] = []
-    var followFrame: CGRect?
-    var followAnchor: FollowAnchor?
     var mergeHeights: [MateHeight] = []
 
     var isWholeStack: Bool {

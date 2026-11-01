@@ -50,7 +50,6 @@ extension MouseEventHandler {
         state.liveDragModifiers = nil
         resumeHandedOverLiveColumnDrag(at: location)
         guard isLiveColumnDragActive else { return false }
-        followLiveStack(to: location)
         updateLiveColumnDrag(at: location)
         return true
     }
@@ -61,7 +60,6 @@ extension MouseEventHandler {
     ) -> Bool {
         if drag.liveDrag {
             state.nativeTitleBarDrag = drag
-            followLiveStack(entry)
             return true
         }
         guard beginLiveColumnDragIfEligible(&drag, entry: entry) else { return false }
@@ -117,7 +115,6 @@ extension MouseEventHandler {
         }
         drag.liveDrag = true
         drag.adoptionStartFrame = start
-        followLiveStack(entry)
         state.deferredClickScroll = nil
         if let location = state.liveDragLocation,
            let monitor = controller.workspaceManager.monitor(for: entry.workspaceId)

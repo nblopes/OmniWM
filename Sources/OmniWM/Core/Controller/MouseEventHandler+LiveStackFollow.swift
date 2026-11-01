@@ -26,40 +26,6 @@ extension MouseEventHandler {
         )
     }
 
-    func followLiveStack(_ entry: WindowState) {
-        guard let engine = controller?.niriEngine,
-              let move = engine.liveColumnMove,
-              move.isWholeStack,
-              move.windowToken == entry.token,
-              let observed = nativeWindowFrameProvider(entry.axRef),
-              let pointer = state.liveDragLocation
-        else { return }
-        engine.liveColumnMove?.followAnchor = .init(frame: observed, pointer: pointer)
-        moveLiveStackFollowers(to: observed)
-    }
-
-    func followLiveStack(to pointer: CGPoint) {
-        guard let anchor = controller?.niriEngine?.liveColumnMove?.followAnchor else { return }
-        moveLiveStackFollowers(to: anchor.frame.offsetBy(
-            dx: pointer.x - anchor.pointer.x,
-            dy: pointer.y - anchor.pointer.y
-        ))
-    }
-
-    private func moveLiveStackFollowers(to frame: CGRect) {
-        guard let controller,
-              let engine = controller.niriEngine,
-              let move = engine.liveColumnMove,
-              move.isWholeStack,
-              frame != move.followFrame
-        else { return }
-        engine.liveColumnMove?.followFrame = frame
-        controller.layoutRefreshController.requestImmediateRelayout(
-            reason: .interactiveGesture,
-            affectedWorkspaceIds: [move.workspaceId]
-        )
-    }
-
     func handleStackRailDrag(_ drag: StackRailDrag) {
         let workspaceId = drag.rail.workspaceId
         guard !isLiveColumnDragActive,
@@ -85,7 +51,6 @@ extension MouseEventHandler {
               })
         else { return }
         state.liveTabPull = .init(token: window.token, anchorLocation: drag.location, startFrame: startFrame)
-        engine.liveColumnMove?.followAnchor = .init(frame: startFrame, pointer: drag.location)
         state.deferredClickScroll = nil
         raiseLiveStack()
         controller.refreshStackRails()
@@ -116,10 +81,7 @@ extension MouseEventHandler {
               let move = engine.liveColumnMove,
               move.isWholeStack
         else { return }
-        let carried = engine.liveCarriedWindows(for: move)
-        for raised in carried.filter({ $0.id != move.windowId }) + carried.filter({ $0.id == move.windowId }) {
-            guard let entry = controller.workspaceManager.entry(for: raised.token) else { continue }
-            controller.performWindowFronting(pid: entry.pid, windowId: entry.windowId, axRef: entry.axRef)
-        }
+        guard let entry = controller.workspaceManager.entry(for: move.windowToken) else { return }
+        controller.performWindowFronting(pid: entry.pid, windowId: entry.windowId, axRef: entry.axRef)
     }
 }

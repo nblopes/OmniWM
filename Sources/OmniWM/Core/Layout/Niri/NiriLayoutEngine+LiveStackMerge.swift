@@ -11,16 +11,35 @@ extension NiriLayoutEngine {
         context: NiriInteractionContext
     ) -> [LiveColumnMove.StackMember] {
         let spans = liveWindowSpans(in: column, context: context)
-        let top = spans.first { $0.window === window }?.minY ?? 0
         return column.windowNodes.map { node in
             let span = spans.first { $0.window === node }
             return .init(
                 windowId: node.id,
                 sizing: .init(size: node.size, height: node.height, restsAtTop: node.restsAtTop(of: column)),
-                offsetY: (span?.minY ?? top) - top,
                 height: span.map { $0.maxY - $0.minY } ?? 0
             )
         }
+    }
+
+    func foldLiveStack(_ column: NiriContainer, showing window: NiriWindow) {
+        column.displayMode = .tabbed
+        if let index = column.windowNodes.firstIndex(where: { $0 === window }) {
+            column.setActiveTileIdx(index)
+        }
+        updateTabbedColumnVisibility(column: column)
+        column.cachedWidth = 0
+    }
+
+    func unfoldLiveStack(of move: LiveColumnMove) {
+        guard move.isWholeStack,
+              let column = liveColumn(withId: move.homeColumnId, in: move.workspaceId),
+              !column.windowNodes.isEmpty,
+              column.displayMode != move.originalSlot.displayMode
+        else { return }
+        column.displayMode = move.originalSlot.displayMode
+        column.setActiveTileIdx(move.originalSlot.activeTileIdx)
+        updateTabbedColumnVisibility(column: column)
+        column.cachedWidth = 0
     }
 
     func liveCarriedWindows(for move: LiveColumnMove) -> [NiriWindow] {
@@ -28,15 +47,6 @@ extension NiriLayoutEngine {
             return [findNode(by: move.windowId, in: move.workspaceId) as? NiriWindow].compactMap(\.self)
         }
         return move.stackMembers.compactMap { findNode(by: $0.windowId, in: move.workspaceId) as? NiriWindow }
-    }
-
-    func liveFollowingFrame(for token: WindowToken, move: LiveColumnMove) -> CGRect? {
-        guard let frame = move.followFrame,
-              let node = findNode(for: token, in: move.workspaceId),
-              let member = move.stackMembers.first(where: { $0.windowId == node.id }),
-              member.height > 0
-        else { return nil }
-        return CGRect(x: frame.minX, y: frame.minY + member.offsetY, width: frame.width, height: member.height)
     }
 
     func liveColumn(_ column: NiriContainer, canTake carried: [NiriWindow], context: NiriInteractionContext) -> Bool {
@@ -86,29 +96,6 @@ extension NiriLayoutEngine {
             if let mate = findNode(by: saved.windowId, in: workspaceId) as? NiriWindow {
                 saved.apply(to: mate)
             }
-        }
-    }
-
-    func settleLiveFollowers(
-        of move: LiveColumnMove,
-        in column: NiriContainer,
-        releasedAt release: CGRect?,
-        context: NiriInteractionContext,
-        state: ViewportState
-    ) {
-        guard let release else { return }
-        for member in move.stackMembers where member.windowId != move.windowId && member.height > 0 {
-            guard let mate = findNode(by: member.windowId, in: move.workspaceId) as? NiriWindow,
-                  mate.parent === column,
-                  let landed = liveWindowFrame(of: mate, in: column, context: context, state: state)
-            else { continue }
-            let followed = CGRect(
-                x: release.minX,
-                y: release.minY + member.offsetY,
-                width: release.width,
-                height: member.height
-            )
-            animateLiveWindow(mate, from: followed, to: landed, context: context)
         }
     }
 
@@ -220,9 +207,11 @@ extension NiriLayoutEngine {
             }
             home.insertChild(window, at: index)
             move.stackMembers.first { $0.windowId == window.id }?.sizing.apply(to: window)
-            window.isHiddenInTabbedMode = false
         }
-        home.setActiveTileIdx(move.originalSlot.activeTileIdx)
+        if let shown = home.windowNodes.firstIndex(where: { $0.id == move.windowId }) {
+            home.setActiveTileIdx(shown)
+        }
+        updateTabbedColumnVisibility(column: home)
         home.cachedWidth = 0
         guard move.homeColumnId == move.originalSlot.columnId else { return }
         home.isLiveHomeSpot = false

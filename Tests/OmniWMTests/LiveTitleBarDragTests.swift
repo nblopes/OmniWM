@@ -349,7 +349,7 @@ final class LiveTitleBarDragTests: NiriInteractionTestCase {
         XCTAssertEqual(fixture.order(), order)
     }
 
-    func testDraggingAStackRailMovesTheWholeStackAlignedAndTheModifierMergesIt() throws {
+    func testDraggingAStackRailFoldsTheStackMovesItAndTheModifierMergesIt() throws {
         let fixture = try makeFixture(pid: 938_034, stackFirstTwo: true)
         let (lower, upper) = (fixture.tokens[0], fixture.tokens[1])
         let stack = try column(holding: lower, in: fixture)
@@ -366,20 +366,16 @@ final class LiveTitleBarDragTests: NiriInteractionTestCase {
         XCTAssertTrue(move.isWholeStack)
         XCTAssertTrue(fixture.handler.isLiveColumnDragActive)
         XCTAssertTrue(fixture.handler.wantsLiveStackMode(move))
-        func frames() throws -> (CGRect, CGRect) {
-            try (
-                XCTUnwrap(fixture.engine.liveFloatingFrame(for: lower, in: fixture.workspaceId)),
-                XCTUnwrap(fixture.engine.liveFloatingFrame(for: upper, in: fixture.workspaceId))
-            )
-        }
-        let (lowerStart, upperStart) = try frames()
+        XCTAssertTrue(stack.isTabbed)
+        let grabbed = move.windowToken
+        let start = try XCTUnwrap(fixture.engine.liveFloatingFrame(for: grabbed, in: fixture.workspaceId))
         fixture.drag(to: CGPoint(x: press.x + 30, y: press.y + 10))
-        let (lowerMoved, upperMoved) = try frames()
-        for (start, moved) in [(lowerStart, lowerMoved), (upperStart, upperMoved)] {
-            XCTAssertEqual(moved.minX - start.minX, 30, accuracy: 0.5)
-            XCTAssertEqual(moved.minY - start.minY, 10, accuracy: 0.5)
-        }
-        XCTAssertEqual(upperMoved.minX, lowerMoved.minX, accuracy: 0.5)
+        let moved = try XCTUnwrap(fixture.engine.liveFloatingFrame(for: grabbed, in: fixture.workspaceId))
+        XCTAssertEqual(moved.minX - start.minX, 30, accuracy: 0.5)
+        XCTAssertEqual(moved.minY - start.minY, 10, accuracy: 0.5)
+        let hidden = grabbed == lower ? upper : lower
+        XCTAssertNil(fixture.engine.liveFloatingFrame(for: hidden, in: fixture.workspaceId))
+        XCTAssertEqual(fixture.engine.findNode(for: hidden, in: fixture.workspaceId)?.isHiddenInTabbedMode, true)
 
         fixture.handler.noteWindowOrderChanged(UInt32(lower.windowId))
         XCTAssertNil(fixture.handler.state.liveStackRaise)
@@ -391,6 +387,7 @@ final class LiveTitleBarDragTests: NiriInteractionTestCase {
         XCTAssertNil(fixture.handler.state.liveStackRaise)
         XCTAssertNil(fixture.engine.liveColumnMove)
         XCTAssertEqual(stack.windowNodes.map(\.token), [lower, upper])
+        XCTAssertFalse(stack.isTabbed)
     }
 
     func testOnlyAStackGetsARailAndOnlyWhileTheModifierIsHeld() throws {

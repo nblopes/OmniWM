@@ -172,7 +172,6 @@ extension NiriLayoutEngine {
         )
         liveColumnMove = nil
         settleLiveWindow(window, in: column, releasedAt: release, context: context, state: &state)
-        settleLiveFollowers(of: move, in: column, releasedAt: release, context: context, state: state)
         return true
     }
 
@@ -224,6 +223,7 @@ extension NiriLayoutEngine {
         }
         if liveColumnMove == nil, liveStackDrop?.windowId != previous.windowId {
             restoreLiveMergeHeights(previous.mergeHeights, in: previous.workspaceId)
+            unfoldLiveStack(of: previous)
         }
         if liveColumnMove == nil, liveStackDrop?.windowId != previous.windowId,
            let saved = previous.mateHeight,

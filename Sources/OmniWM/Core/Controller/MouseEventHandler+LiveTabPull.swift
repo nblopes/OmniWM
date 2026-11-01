@@ -56,7 +56,6 @@ extension MouseEventHandler {
               let engine = controller.niriEngine,
               engine.liveColumnMove?.windowToken == pull.token
         else { return }
-        followLiveStack(to: location)
         engine.liveColumnMove?.floatingFrame = pull.startFrame.offsetBy(
             dx: location.x - pull.anchorLocation.x,
             dy: location.y - pull.anchorLocation.y

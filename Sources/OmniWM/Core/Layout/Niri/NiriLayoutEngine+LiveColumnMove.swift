@@ -75,6 +75,7 @@ extension NiriLayoutEngine {
         liveColumnMove?.sideBySideIds = sideBySideVisibleColumns(around: column, context: context, state: state)
         if isWholeColumn, !column.isTabbed {
             liveColumnMove?.stackMembers = liveStackMembers(of: column, grabbing: window, context: context)
+            foldLiveStack(column, showing: window)
         }
         retargetActiveColumn(to: column, context: context, state: &state)
         state.selectedNodeId = windowId
