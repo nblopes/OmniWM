@@ -49,26 +49,15 @@ extension MouseEventHandler {
     private func moveLiveStackFollowers(to frame: CGRect) {
         guard let controller,
               let engine = controller.niriEngine,
-              var move = engine.liveColumnMove,
+              let move = engine.liveColumnMove,
               move.isWholeStack,
               frame != move.followFrame
         else { return }
-        move.followFrame = frame
         engine.liveColumnMove?.followFrame = frame
-        let ownsEveryWindow = state.liveTabPull != nil
-        let targets = move.stackMembers.compactMap { member -> SkyLightPositionTarget? in
-            guard ownsEveryWindow || member.windowId != move.windowId,
-                  let token = (engine.findNode(by: member.windowId, in: move.workspaceId) as? NiriWindow)?.token,
-                  let followed = engine.liveFollowingFrame(for: token, move: move)
-            else { return nil }
-            return .init(token: token, frame: followed)
-        }
-        guard controller.axManager.applyPositionsViaSkyLight(targets) == .submitted else { return }
-        engine.liveColumnMove?.movesInWindowServer = ownsEveryWindow
-        for target in targets {
-            controller.axManager.recordSkyLightMove(windowId: target.token.windowId, origin: target.frame.origin)
-            controller.axManager.forceApplyNextFrame(for: target.token.windowId)
-        }
+        controller.layoutRefreshController.requestImmediateRelayout(
+            reason: .interactiveGesture,
+            affectedWorkspaceIds: [move.workspaceId]
+        )
     }
 
     func handleStackRailDrag(_ drag: StackRailDrag) {
@@ -100,7 +89,8 @@ extension MouseEventHandler {
         state.deferredClickScroll = nil
         let carried = engine.liveColumnMove.map { engine.liveCarriedWindows(for: $0) } ?? []
         for raised in carried.filter({ $0 !== window }) + [window] {
-            SkyLight.shared.orderWindow(UInt32(raised.token.windowId), relativeTo: 0, order: .above)
+            guard let entry = controller.workspaceManager.entry(for: raised.token) else { continue }
+            controller.performWindowFronting(pid: entry.pid, windowId: entry.windowId, axRef: entry.axRef)
         }
         controller.refreshStackRails()
         startLiveDragKeyCapture()

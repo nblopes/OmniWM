@@ -14,7 +14,7 @@ struct StackRail: Equatable {
     static func frame(beside column: CGRect) -> CGRect? {
         guard column.width > 1, column.height > 1 else { return nil }
         let height = min(maxHeight, column.height * 0.4)
-        return CGRect(x: column.minX - width, y: column.midY - height / 2, width: width, height: height)
+        return CGRect(x: column.minX, y: column.midY - height / 2, width: width, height: height)
     }
 }
 

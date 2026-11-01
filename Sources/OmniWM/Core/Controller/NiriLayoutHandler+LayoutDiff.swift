@@ -135,11 +135,9 @@ extension NiriLayoutHandler {
         diff: inout WorkspaceLayoutDiff
     ) -> Bool {
         let token = window.token
-        guard !context.excludedTokens.contains(token) else { return false }
-        if context.engine.liveStackMovesInWindowServer(token, in: context.workspaceId) {
-            return true
-        }
-        guard let floating = context.engine.liveFloatingFrame(for: token, in: context.workspaceId) else { return false }
+        guard !context.excludedTokens.contains(token),
+              let floating = context.engine.liveFloatingFrame(for: token, in: context.workspaceId)
+        else { return false }
         if window.hiddenState != nil {
             diff.visibilityChanges.append(.show(token))
         }

@@ -39,15 +39,6 @@ extension NiriLayoutEngine {
         return CGRect(x: frame.minX, y: frame.minY + member.offsetY, width: frame.width, height: member.height)
     }
 
-    func liveStackMovesInWindowServer(_ token: WindowToken, in workspaceId: WorkspaceDescriptor.ID) -> Bool {
-        guard let move = liveColumnMove,
-              move.workspaceId == workspaceId,
-              move.movesInWindowServer,
-              let node = findNode(for: token, in: workspaceId)
-        else { return false }
-        return move.stackMembers.contains { $0.windowId == node.id }
-    }
-
     func liveColumn(_ column: NiriContainer, canTake carried: [NiriWindow], context: NiriInteractionContext) -> Bool {
         guard !column.isTabbed else { return true }
         let staying = projectedWindows(in: column, workspaceId: context.workspaceId)

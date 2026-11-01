@@ -401,7 +401,7 @@ final class LiveTitleBarDragTests: NiriInteractionTestCase {
         let rails = fixture.controller.niriLayoutHandler.desiredStackRails()
         XCTAssertEqual(rails.map(\.columnId), [stack.id])
         let stackFrame = try XCTUnwrap(stack.renderedFrame)
-        XCTAssertEqual(rails.first?.frame.maxX ?? 0, stackFrame.minX, accuracy: 0.5)
+        XCTAssertEqual(rails.first?.frame.minX ?? 0, stackFrame.minX, accuracy: 0.5)
         manager.handleFlagsChanged(rawFlags: 0)
         XCTAssertFalse(manager.isRevealed)
         manager.update([])
