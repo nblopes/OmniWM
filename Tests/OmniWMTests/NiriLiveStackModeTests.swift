@@ -1433,7 +1433,7 @@ final class NiriLiveStackModeTests: XCTestCase {
         XCTAssertLessThan(settled, fullHeight - 100)
     }
 
-    func testAPlainDragOfAStackTakesTheWholeColumnAndHoldingTheModifierAtTheStartTakesOneWindow() {
+    func testAStackMoveTakesTheWholeColumnAndAPlainMoveTakesOneWindow() {
         var fixture = makeFixture()
         fixture.stack(2, onto: 1)
         XCTAssertTrue(fixture.begin(2))

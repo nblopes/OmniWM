@@ -99,6 +99,7 @@ final class WMController {
 
     @ObservationIgnored
     private(set) lazy var tabRailManager = TabRailManager(motionPolicy: motionPolicy, appInfoCache: appInfoCache)
+    let stackRailManager = StackRailManager()
     @ObservationIgnored
     lazy var nativeFullscreenPlaceholderManager: NativeFullscreenPlaceholderManager = {
         let manager = NativeFullscreenPlaceholderManager()

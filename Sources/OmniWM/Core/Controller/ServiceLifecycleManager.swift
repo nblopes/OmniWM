@@ -115,6 +115,7 @@ final class ServiceLifecycleManager {
             controller.syncMonitorsToNiriEngine()
         }
         controller.hasStartedServices = true
+        controller.syncStackRailMonitor()
         controller.appVolumeMixer.start()
         controller.updateWorkspaceBarNotificationBadgeSettings()
         controller.reconcileEnabledAndHotkeysState()
@@ -319,6 +320,7 @@ final class ServiceLifecycleManager {
         controller.axEventHandler.cleanup()
 
         controller.tabRailManager.removeAll()
+        controller.stackRailManager.stop()
         controller.nativeFullscreenPlaceholderManager.removeAll()
         controller.surfaceReconciler.cleanup()
         controller.cleanupUIOnStop()

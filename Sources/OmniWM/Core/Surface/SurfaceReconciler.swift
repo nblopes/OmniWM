@@ -110,6 +110,7 @@ final class SurfaceReconciler {
         case .fullScene:
             runFullReconcile(forceOrdering: forceOrdering)
         }
+        controller?.refreshStackRails()
     }
 
     func reconcileAnimationTick() {

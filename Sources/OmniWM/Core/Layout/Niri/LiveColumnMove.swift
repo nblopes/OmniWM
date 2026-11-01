@@ -234,6 +234,7 @@ struct LiveColumnMove {
     var stackMembers: [StackMember] = []
     var followFrame: CGRect?
     var followAnchor: FollowAnchor?
+    var movesInWindowServer = false
     var mergeHeights: [MateHeight] = []
 
     var isWholeStack: Bool {

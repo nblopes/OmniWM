@@ -349,32 +349,62 @@ final class LiveTitleBarDragTests: NiriInteractionTestCase {
         XCTAssertEqual(fixture.order(), order)
     }
 
-    func testAPlainDragOfAStackedWindowMovesTheWholeColumnWithItsMateFollowing() throws {
+    func testDraggingAStackRailMovesTheWholeStackAlignedAndTheModifierMergesIt() throws {
         let fixture = try makeFixture(pid: 938_034, stackFirstTwo: true)
         let (lower, upper) = (fixture.tokens[0], fixture.tokens[1])
         let stack = try column(holding: lower, in: fixture)
-        let gap = try fixture.frame(upper).minY - fixture.frame(lower).minY
+        let press = try fixture.centre(of: lower)
+        fixture.handler.modifierFlagsProvider = { .maskAlternate }
+        fixture.handler.pressedMouseButtonsProvider = { MouseEventHandler.MouseButton.left.pressedMask }
 
-        try fixture.startLiveDrag(lower)
+        fixture.handler.handleStackRailDrag(StackRailDrag(
+            rail: StackRail(columnId: stack.id, workspaceId: fixture.workspaceId, frame: .zero),
+            location: press
+        ))
 
         let move = try XCTUnwrap(fixture.engine.liveColumnMove)
-        XCTAssertTrue(move.isWholeColumn)
         XCTAssertTrue(move.isWholeStack)
-        XCTAssertFalse(move.inStack)
-        let dragged = try fixture.frame(lower).offsetBy(dx: 40, dy: 25)
-        try fixture.macOSMoves(lower, to: dragged)
-        let followed = try XCTUnwrap(fixture.engine.liveFloatingFrame(for: upper, in: fixture.workspaceId))
-        XCTAssertEqual(followed.minX, dragged.minX, accuracy: 0.5)
-        XCTAssertEqual(followed.minY - dragged.minY, gap, accuracy: 1)
-        XCTAssertEqual(stack.windowNodes.map(\.token), [lower, upper])
-        let pointer = try XCTUnwrap(fixture.handler.state.liveDragLocation)
-        fixture.drag(to: CGPoint(x: pointer.x + 30, y: pointer.y + 10))
-        let ahead = try XCTUnwrap(fixture.engine.liveFloatingFrame(for: upper, in: fixture.workspaceId))
-        XCTAssertEqual(ahead.minX - followed.minX, 30, accuracy: 0.5)
-        XCTAssertEqual(ahead.minY - followed.minY, 10, accuracy: 0.5)
-        XCTAssertFalse(fixture.handler.wantsLiveStackMode(move))
-        fixture.handler.modifierFlagsProvider = { .maskAlternate }
+        XCTAssertTrue(fixture.handler.isLiveColumnDragActive)
         XCTAssertTrue(fixture.handler.wantsLiveStackMode(move))
+        func frames() throws -> (CGRect, CGRect) {
+            try (
+                XCTUnwrap(fixture.engine.liveFloatingFrame(for: lower, in: fixture.workspaceId)),
+                XCTUnwrap(fixture.engine.liveFloatingFrame(for: upper, in: fixture.workspaceId))
+            )
+        }
+        let (lowerStart, upperStart) = try frames()
+        fixture.drag(to: CGPoint(x: press.x + 30, y: press.y + 10))
+        let (lowerMoved, upperMoved) = try frames()
+        for (start, moved) in [(lowerStart, lowerMoved), (upperStart, upperMoved)] {
+            XCTAssertEqual(moved.minX - start.minX, 30, accuracy: 0.5)
+            XCTAssertEqual(moved.minY - start.minY, 10, accuracy: 0.5)
+        }
+        XCTAssertEqual(upperMoved.minX, lowerMoved.minX, accuracy: 0.5)
+
+        fixture.handler.modifierFlagsProvider = { [] }
+        fixture.handler.dispatchMouseUp(at: CGPoint(x: press.x + 30, y: press.y + 10))
+        XCTAssertNil(fixture.engine.liveColumnMove)
+        XCTAssertEqual(stack.windowNodes.map(\.token), [lower, upper])
+    }
+
+    func testOnlyAStackGetsARailAndOnlyWhileTheModifierIsHeld() throws {
+        let fixture = try makeFixture(pid: 938_035, stackFirstTwo: true)
+        let stack = try column(holding: fixture.tokens[0], in: fixture)
+        let manager = fixture.controller.stackRailManager
+        fixture.controller.configureStackRails()
+
+        manager.handleFlagsChanged(rawFlags: 0)
+        XCTAssertFalse(manager.isRevealed)
+        manager.handleFlagsChanged(rawFlags: CGEventFlags.maskAlternate.rawValue)
+        XCTAssertTrue(manager.isRevealed)
+
+        let rails = fixture.controller.niriLayoutHandler.desiredStackRails()
+        XCTAssertEqual(rails.map(\.columnId), [stack.id])
+        let stackFrame = try XCTUnwrap(stack.renderedFrame)
+        XCTAssertEqual(rails.first?.frame.maxX ?? 0, stackFrame.minX, accuracy: 0.5)
+        manager.handleFlagsChanged(rawFlags: 0)
+        XCTAssertFalse(manager.isRevealed)
+        manager.update([])
     }
 
     func testAStackedWindowStartsALiveDragAndMovesWithinItsStack() throws {
@@ -383,15 +413,11 @@ final class LiveTitleBarDragTests: NiriInteractionTestCase {
         let stack = try column(holding: lower, in: fixture)
         XCTAssertEqual(stack.windowNodes.map(\.token), [lower, upper])
 
-        fixture.handler.modifierFlagsProvider = { .maskAlternate }
         try fixture.startLiveDrag(lower)
-        fixture.handler.modifierFlagsProvider = { [] }
 
         XCTAssertTrue(fixture.handler.isLiveColumnDragActive)
         XCTAssertEqual(fixture.engine.liveColumnMove?.inStack, true)
         let drop = try fixture.centre(of: upper)
-        fixture.drag(to: CGPoint(x: drop.x, y: drop.y + 2))
-        XCTAssertEqual(fixture.engine.liveColumnMove?.stackMode, false)
         fixture.drag(to: drop)
         XCTAssertEqual(stack.windowNodes.map(\.token), [upper, lower])
         fixture.handler.dispatchMouseUp(at: drop)

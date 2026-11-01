@@ -147,6 +147,7 @@ extension WMController {
         )
         mouseEventHandler.syncTapFilterSnapshot()
         updateHotkeyBindings(settings.hotkeyBindings)
+        syncStackRailMonitor()
     }
 
     private func applyPersistedLayoutSettings(_ settings: SettingsStore) {
