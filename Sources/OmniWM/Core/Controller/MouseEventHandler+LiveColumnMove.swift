@@ -145,7 +145,7 @@ extension MouseEventHandler {
         return keptSize && moved
     }
 
-    func updateLiveColumnDrag(at location: CGPoint, immediate: Bool = false) {
+    func updateLiveColumnDrag(at location: CGPoint, immediate: Bool = false, depth: Int = 0) {
         guard isLiveColumnDragActive,
               let controller,
               let engine = controller.niriEngine,
@@ -234,9 +234,15 @@ extension MouseEventHandler {
         refreshLiveColumnLayout(in: workspaceId, engine: engine)
         if !hasPendingLiveColumnAnimation(in: workspaceId, engine: engine) {
             engine.liveColumnMoveSettled()
-            updateLiveColumnDrag(at: location)
+            guard depth < Self.liveDragChainLimit else {
+                traceLiveDrag("chain-limit", at: location)
+                return
+            }
+            updateLiveColumnDrag(at: location, depth: depth + 1)
         }
     }
+
+    static let liveDragChainLimit = 32
 
     func wantsLiveStackMode(_ move: LiveColumnMove) -> Bool {
         guard !move.isWholeColumn || move.isWholeStack else { return false }
