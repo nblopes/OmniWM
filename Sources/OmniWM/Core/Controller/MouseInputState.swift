@@ -121,6 +121,7 @@ struct MouseInputState {
     var liveDragTracedView: String?
     var liveDragTracedDecline: String?
     var liveTabPull: LiveTabPull?
+    var liveStackRaise: Task<Void, Never>?
     var liveDropScroll: LiveDropScroll?
     var liveHoverTimer: Timer?
     var liveEdgeScroll: LiveEdgeScroll?

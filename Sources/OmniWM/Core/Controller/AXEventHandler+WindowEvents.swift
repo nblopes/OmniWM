@@ -100,6 +100,7 @@ extension AXEventHandler {
     }
 
     private func handleWindowOrderChanged(windowId: UInt32) {
+        controller?.mouseEventHandler.noteWindowOrderChanged(windowId)
         enqueueLifecycleQuery(windowId: windowId, kind: .orderChanged)
     }
 

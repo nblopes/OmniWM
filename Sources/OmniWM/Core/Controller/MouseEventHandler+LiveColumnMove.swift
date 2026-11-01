@@ -397,6 +397,8 @@ extension MouseEventHandler {
         cancelLiveHoverCheck()
         state.nativeTitleBarDrag?.liveDrag = false
         state.liveTabPull = nil
+        state.liveStackRaise?.cancel()
+        state.liveStackRaise = nil
         state.liveDragModifiers = nil
         liveDragModifierCapture.stop()
     }

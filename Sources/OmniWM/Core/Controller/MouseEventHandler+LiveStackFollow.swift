@@ -87,13 +87,39 @@ extension MouseEventHandler {
         state.liveTabPull = .init(token: window.token, anchorLocation: drag.location, startFrame: startFrame)
         engine.liveColumnMove?.followAnchor = .init(frame: startFrame, pointer: drag.location)
         state.deferredClickScroll = nil
-        let carried = engine.liveColumnMove.map { engine.liveCarriedWindows(for: $0) } ?? []
-        for raised in carried.filter({ $0 !== window }) + [window] {
-            guard let entry = controller.workspaceManager.entry(for: raised.token) else { continue }
-            controller.performWindowFronting(pid: entry.pid, windowId: entry.windowId, axRef: entry.axRef)
-        }
+        raiseLiveStack()
         controller.refreshStackRails()
         startLiveDragKeyCapture()
         moveLiveTabPull(to: drag.location)
+    }
+
+    func noteWindowOrderChanged(_ windowId: UInt32) {
+        guard state.liveTabPull != nil,
+              state.liveStackRaise == nil,
+              let engine = controller?.niriEngine,
+              let move = engine.liveColumnMove,
+              move.isWholeStack,
+              !engine.liveCarriedWindows(for: move).contains(where: { $0.token.windowId == Int(windowId) })
+        else { return }
+        state.liveStackRaise = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(60))
+            guard let self, !Task.isCancelled else { return }
+            state.liveStackRaise = nil
+            raiseLiveStack()
+        }
+    }
+
+    private func raiseLiveStack() {
+        guard state.liveTabPull != nil,
+              let controller,
+              let engine = controller.niriEngine,
+              let move = engine.liveColumnMove,
+              move.isWholeStack
+        else { return }
+        let carried = engine.liveCarriedWindows(for: move)
+        for raised in carried.filter({ $0.id != move.windowId }) + carried.filter({ $0.id == move.windowId }) {
+            guard let entry = controller.workspaceManager.entry(for: raised.token) else { continue }
+            controller.performWindowFronting(pid: entry.pid, windowId: entry.windowId, axRef: entry.axRef)
+        }
     }
 }

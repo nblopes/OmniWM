@@ -381,8 +381,14 @@ final class LiveTitleBarDragTests: NiriInteractionTestCase {
         }
         XCTAssertEqual(upperMoved.minX, lowerMoved.minX, accuracy: 0.5)
 
+        fixture.handler.noteWindowOrderChanged(UInt32(lower.windowId))
+        XCTAssertNil(fixture.handler.state.liveStackRaise)
+        fixture.handler.noteWindowOrderChanged(UInt32(fixture.tokens[2].windowId))
+        XCTAssertNotNil(fixture.handler.state.liveStackRaise)
+
         fixture.handler.modifierFlagsProvider = { [] }
         fixture.handler.dispatchMouseUp(at: CGPoint(x: press.x + 30, y: press.y + 10))
+        XCTAssertNil(fixture.handler.state.liveStackRaise)
         XCTAssertNil(fixture.engine.liveColumnMove)
         XCTAssertEqual(stack.windowNodes.map(\.token), [lower, upper])
     }
