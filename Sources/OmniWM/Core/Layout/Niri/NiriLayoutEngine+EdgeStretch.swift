@@ -100,9 +100,11 @@ extension NiriLayoutEngine {
         let lowest = limits.lowerBound
         let highest = max(lowest, limits.upperBound - width)
         var drift = after.minX - min(max(centre - width / 2, lowest), highest)
-        if !centresFocusedColumn(in: context.workspaceId),
-           let ends = stripEndsDrift(strip: strip, context: context),
-           ends.lowest <= ends.highest + FrameTolerance.screenMatch
+        if let centred = fittingStripDrift(strip, context: context) {
+            drift = centred
+        } else if !centresFocusedColumn(in: context.workspaceId),
+                  let ends = stripEndsDrift(strip: strip, context: context),
+                  ends.lowest <= ends.highest + FrameTolerance.screenMatch
         {
             drift = min(max(drift, ends.lowest), ends.highest)
         }

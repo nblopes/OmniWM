@@ -52,9 +52,7 @@ extension NiriLayoutEngine {
             columns: cols, activeIndex: activeIdx, activePosition: activePosition,
             viewStart: viewStart, span: viewportSpan, scale: scale, viewFrame: monitor?.frame
         )
-        if settings.centerFocusedColumn == .always
-            || (cols.count == 1 && settings.alwaysCenterSingleColumn)
-        {
+        if settings.centerFocusedColumn == .always || centresWholeStrip(cols, context: context) {
             return centerRemovalViewport(
                 viewport, context: context, state: &state,
                 centerMode: settings.centerFocusedColumn, centerSingle: settings.alwaysCenterSingleColumn
@@ -87,6 +85,7 @@ extension NiriLayoutEngine {
             currentViewStart: viewport.viewStart,
             centerMode: centerMode,
             alwaysCenterSingleColumn: centerSingle,
+            edges: viewportEdgeRules(in: context.workspaceId),
             scale: viewport.scale,
             viewFrame: viewport.viewFrame
         )

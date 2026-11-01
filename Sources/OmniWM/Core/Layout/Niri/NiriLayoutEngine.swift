@@ -138,6 +138,8 @@ final class NiriLayoutEngine {
 
     var keepsStripEndsOnScreen = false
 
+    var centersFittingStrips = false
+
     var clipsOverflowToDisplay = false
 
     var edgePeekShare: CGFloat?
@@ -476,6 +478,7 @@ extension NiriLayoutEngine {
     func applyNaturalWindowDrag(_ enabled: Bool) {
         tabbedColumnsFillHeight = enabled
         keepsStripEndsOnScreen = enabled
+        centersFittingStrips = enabled
         clipsOverflowToDisplay = enabled
         if !enabled {
             forgetTopRests()

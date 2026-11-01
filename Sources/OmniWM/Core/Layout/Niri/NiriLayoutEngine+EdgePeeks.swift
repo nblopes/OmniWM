@@ -206,6 +206,10 @@ extension NiriLayoutEngine {
     }
 
     func viewportEdgeRules(in workspaceId: WorkspaceDescriptor.ID) -> ViewportEdgeRules {
-        ViewportEdgeRules(keepsStripEndsOnScreen: keepsStripEndsOnScreen, peeks: edgePeekWidths(in: workspaceId))
+        ViewportEdgeRules(
+            keepsStripEndsOnScreen: keepsStripEndsOnScreen,
+            centersFittingStrip: centresFittingStrip(in: workspaceId),
+            peeks: edgePeekWidths(in: workspaceId)
+        )
     }
 }

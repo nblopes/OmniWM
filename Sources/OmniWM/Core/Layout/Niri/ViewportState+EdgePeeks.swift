@@ -120,6 +120,7 @@ extension ViewportFittingAreas {
 
 struct ViewportEdgeRules: Equatable {
     var keepsStripEndsOnScreen = false
+    var centersFittingStrip = false
     var peeks: EdgePeekWidths?
 }
 
