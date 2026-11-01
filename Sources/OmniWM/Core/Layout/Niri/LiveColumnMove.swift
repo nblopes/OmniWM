@@ -100,6 +100,7 @@ struct LiveColumnMove {
     var hover: Hover?
     var dropSpaceId: NodeId?
     var lockedTarget: TargetLock?
+    var edgeScrollSide: Side?
     var swapCount = 0
     var narrowedSlot: NarrowedSlot?
     var slotClosing: SlotClosing?
