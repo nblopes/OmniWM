@@ -61,6 +61,8 @@ final class NiriLayoutEngine {
         }
     }
 
+    var stripGlides: [WindowToken: StripGlide] = [:]
+
     var resizeConfiguration = ResizeConfiguration.default
     var moveConfiguration = MoveConfiguration.default
 
