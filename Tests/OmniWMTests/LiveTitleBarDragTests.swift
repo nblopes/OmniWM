@@ -643,6 +643,27 @@ final class LiveTitleBarDragTests: NiriInteractionTestCase {
         XCTAssertNil(fixture.handler.state.deferredClickScroll)
     }
 
+    func testAWindowFocusedWhileOmniWMsOwnScrollRunsIsScrolledIntoView() async throws {
+        let fixture = try makeFixture(pid: 938_017, windowCount: 5)
+        fixture.controller.settings.niri.naturalWindowDrag = false
+        let target = fixture.tokens[3]
+        try scroll(fixture, so: target, isHalfOffTheRightEdge: ())
+        fixture.manager.withNiriViewportState(for: fixture.workspaceId) { state in
+            state.springOffset(to: state.viewOffset - 40)
+        }
+        XCTAssertTrue(fixture.manager.animationDriver.hasMotion(in: fixture.workspaceId))
+        XCTAssertFalse(fixture.manager.animationDriver.hasUserMotion(in: fixture.workspaceId))
+
+        fixture.controller.axEventHandler.handleManagedAppActivation(
+            entry: try fixture.entry(target), isWorkspaceActive: true, appFullscreen: false
+        )
+        fixture.manager.animationDriver.removeMotions(for: [fixture.workspaceId])
+        try await drainRefreshes(fixture)
+
+        let workingFrame = fixture.controller.insetWorkingFrame(for: fixture.monitor)
+        XCTAssertLessThanOrEqual(try fixture.settledFrame(target).maxX, workingFrame.maxX + 1)
+    }
+
     func testAPressThatBecomesALiveDragDropsTheDeferredClickScroll() throws {
         let fixture = try makeFixture(pid: 938_016, windowCount: 5)
         let target = fixture.tokens[3]

@@ -262,7 +262,7 @@ extension AXEventHandler {
             intent.origin.preservesViewportOnActivation
         case .external: false
         }
-        let preserveViewport = controller.workspaceManager.animationDriver.hasMotion(in: wsId)
+        let preserveViewport = controller.workspaceManager.animationDriver.hasUserMotion(in: wsId)
             || preservesPointerViewport
             || preservesAppTerminationRecoveryViewport(for: entry.token)
         let preserveReplacementViewport = isProtectedManagedReplacementFocus(
