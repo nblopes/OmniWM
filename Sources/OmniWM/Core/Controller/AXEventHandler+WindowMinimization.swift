@@ -20,6 +20,9 @@ extension AXEventHandler {
         }
         guard CFEqual(entry.axRef.element, axRef.element) else { return }
         updateWindowMinimizedState(minimized, token: token)
+        if !minimized, entry.mode == .floating {
+            requestTargetedFullRescan(for: [pid])
+        }
         if !minimized, frontmostApplicationPIDProvider() == pid {
             handleAppActivation(pid: pid, source: .focusedWindowChanged)
         }
