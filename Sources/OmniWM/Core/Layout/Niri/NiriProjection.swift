@@ -321,6 +321,7 @@ extension NiriLayoutEngine {
             )
             state = projectedState
             state.activeColumnIndex = projectedColumns[targetProjectedIndex].durableIndex
+            traceSelectionScroll("projected", node: node, columns: containers, state: projectedState, context: context)
         }
     }
 
