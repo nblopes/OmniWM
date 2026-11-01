@@ -16,7 +16,7 @@ extension NiriLayoutEngine {
         guard var move = liveColumnMove,
               move.workspaceId == context.workspaceId,
               held != move.stackMode,
-              !(held && move.isWholeColumn)
+              !(held && move.isWholeColumn && !move.isWholeStack)
         else { return .unchanged }
         defer { liveColumnMove = move }
 
@@ -172,6 +172,7 @@ extension NiriLayoutEngine {
         )
         liveColumnMove = nil
         settleLiveWindow(window, in: column, releasedAt: release, context: context, state: &state)
+        settleLiveFollowers(of: move, in: column, releasedAt: release, context: context, state: state)
         return true
     }
 
@@ -221,6 +222,9 @@ extension NiriLayoutEngine {
         if liveColumnMove == nil, liveStackDrop?.homeColumnId != previous.homeColumnId {
             removeLivePlaceholder(previous.homeColumnId, in: previous.workspaceId)
         }
+        if liveColumnMove == nil, liveStackDrop?.windowId != previous.windowId {
+            restoreLiveMergeHeights(previous.mergeHeights, in: previous.workspaceId)
+        }
         if liveColumnMove == nil, liveStackDrop?.windowId != previous.windowId,
            let saved = previous.mateHeight,
            let mate = findNode(by: saved.windowId, in: previous.workspaceId) as? NiriWindow,
@@ -251,6 +255,9 @@ extension NiriLayoutEngine {
         context: NiriInteractionContext,
         state: inout ViewportState
     ) -> Bool {
+        if move.isWholeStack {
+            return placeLiveMerge(landing, move: &move, context: context, state: &state)
+        }
         guard let window = findNode(by: move.windowId, in: move.workspaceId) as? NiriWindow,
               let home = liveDraggedColumn(for: move),
               let source = findColumn(containing: window, in: move.workspaceId)
@@ -259,7 +266,7 @@ extension NiriLayoutEngine {
         let affected = [source, target ?? home]
         retargetActiveColumn(to: home, context: context, state: &state)
         let columnsBefore = primaryPositions(context: context, state: state)
-        let placed = slideLiveWindows(in: affected, skipping: window, context: context) {
+        let placed = slideLiveWindows(in: affected, skipping: [window], context: context) {
             restoreLiveMateHeight(&move)
             guard relocateLiveWindow(window, to: landing, from: source, move: move, context: context) else {
                 return false
@@ -286,7 +293,7 @@ extension NiriLayoutEngine {
         mate.height = .default
     }
 
-    private func keepLiveColumnWidths(landing: Bool, move: inout LiveColumnMove) {
+    func keepLiveColumnWidths(landing: Bool, move: inout LiveColumnMove) {
         let workspace = ensureState(for: move.workspaceId)
         guard landing else {
             if let kept = move.keptWidths {
@@ -311,14 +318,14 @@ extension NiriLayoutEngine {
 
     func slideLiveWindows<Result>(
         in columns: [NiriContainer],
-        skipping skipped: NiriWindow,
+        skipping skipped: [NiriWindow],
         context: NiriInteractionContext,
         _ change: () -> Result
     ) -> Result {
         let before = liveWindowPlaces(in: columns, context: context)
         let result = change()
         let after = liveWindowPlaces(in: columns, context: context)
-        for (id, previous) in before where id != skipped.id {
+        for (id, previous) in before where !skipped.contains(where: { $0.id == id }) {
             guard let current = after[id],
                   let node = findNode(by: id, in: context.workspaceId) as? NiriWindow
             else { continue }
@@ -414,29 +421,25 @@ extension NiriLayoutEngine {
         context: NiriInteractionContext
     ) -> LiveColumnMove.StackChoice {
         guard let window = findNode(by: move.windowId, in: move.workspaceId) as? NiriWindow else { return .keep }
+        let carried = liveCarriedWindows(for: move)
+        let isCarried = { (node: NiriWindow) in carried.contains { $0 === node } }
         guard let column = liveColumn(in: strip, at: cursor, ignoring: liveDropSpace(for: move)),
               column.id != move.homeColumnId || move.inStack,
-              projectedWindows(in: column, workspaceId: move.workspaceId).contains(where: { $0 !== window }),
+              projectedWindows(in: column, workspaceId: move.workspaceId).contains(where: { !isCarried($0) }),
               liveColumn(column, fitsWidthOf: window, strip: strip),
-              columnCanAcceptTransfer(
-                  column,
-                  adding: window,
-                  removing: window,
-                  in: move.workspaceId,
-                  geometry: context.sizingGeometry
-              )
+              liveColumn(column, canTake: carried, context: context)
         else { return .home }
 
         if column.isTabbed {
             guard let shown = projectedActiveWindow(in: column, workspaceId: move.workspaceId),
-                  shown !== window else { return .home }
+                  !isCarried(shown) else { return .home }
             return .land(.init(columnId: column.id, targetWindowId: shown.id, above: false))
         }
         let spans = liveWindowSpans(in: column, context: context)
-        if spans.contains(where: { $0.window === window && $0.contains(y: cursor.y) }) {
+        if spans.contains(where: { isCarried($0.window) && $0.contains(y: cursor.y) }) {
             return .keep
         }
-        let others = spans.filter { $0.window !== window }
+        let others = spans.filter { !isCarried($0.window) }
         guard let hitIndex = others.firstIndex(where: { $0.contains(y: cursor.y) }) else {
             return liveFreeArea(at: cursor, strip: strip, move: move, context: context) == nil ? .keep : .home
         }

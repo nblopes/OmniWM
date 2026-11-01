@@ -118,10 +118,8 @@ extension NiriLayoutEngine {
     }
 
     func liveFloatingFrame(for token: WindowToken, in workspaceId: WorkspaceDescriptor.ID) -> CGRect? {
-        guard let move = liveColumnMove, move.windowToken == token, move.workspaceId == workspaceId else {
-            return nil
-        }
-        return move.floatingFrame
+        guard let move = liveColumnMove, move.workspaceId == workspaceId else { return nil }
+        return move.windowToken == token ? move.floatingFrame : liveFollowingFrame(for: token, move: move)
     }
 
     private func liveSlotTarget(
@@ -144,7 +142,7 @@ extension NiriLayoutEngine {
         to index: Int,
         context: NiriInteractionContext
     ) {
-        slideLiveWindows(in: [home], skipping: window, context: context) {
+        slideLiveWindows(in: [home], skipping: [window], context: context) {
             home.insertChild(window, at: index)
             activateWindow(window.id, in: context.workspaceId)
         }
@@ -164,7 +162,7 @@ extension NiriLayoutEngine {
         else { return false }
         let screenBefore = liveScreenPositions(context: context, state: state)
         let positionsBefore = primaryPositions(context: context, state: state)
-        let column = slideLiveWindows(in: [home], skipping: window, context: context) {
+        let column = slideLiveWindows(in: [home], skipping: [window], context: context) {
             detachLiveWindow(
                 window,
                 from: home,

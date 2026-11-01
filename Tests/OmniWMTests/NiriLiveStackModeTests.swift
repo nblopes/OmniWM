@@ -93,6 +93,16 @@ final class NiriLiveStackModeTests: XCTestCase {
             )
         }
 
+        mutating func beginStack(_ index: Int) -> Bool {
+            engine.liveColumnMoveBegin(
+                windowId: window(index).id,
+                windowToken: tokens[index],
+                movesStack: true,
+                context: context,
+                state: &state
+            )
+        }
+
         mutating func setStackMode(_ held: Bool, at cursor: CGPoint) -> LiveColumnMove.Step {
             let step = engine.liveColumnMoveStackModeChanged(
                 held: held,
@@ -1421,6 +1431,128 @@ final class NiriLiveStackModeTests: XCTestCase {
         XCTAssertEqual(start, fullHeight, accuracy: 2)
         XCTAssertEqual(settled, fixture.span(of: 2).maxY - fixture.span(of: 2).minY, accuracy: 1)
         XCTAssertLessThan(settled, fullHeight - 100)
+    }
+
+    func testAPlainDragOfAStackTakesTheWholeColumnAndHoldingTheModifierAtTheStartTakesOneWindow() {
+        var fixture = makeFixture()
+        fixture.stack(2, onto: 1)
+        XCTAssertTrue(fixture.begin(2))
+        XCTAssertEqual(fixture.engine.liveColumnMove?.inStack, true)
+        XCTAssertEqual(fixture.engine.liveColumnMove?.isWholeStack, false)
+        XCTAssertTrue(fixture.engine.liveColumnMoveCancel(context: fixture.context, state: &fixture.state))
+
+        XCTAssertTrue(fixture.beginStack(2))
+
+        let move = fixture.engine.liveColumnMove
+        XCTAssertEqual(move?.isWholeColumn, true)
+        XCTAssertEqual(move?.inStack, false)
+        XCTAssertEqual(move?.stackMembers.map(\.windowId), [fixture.window(1).id, fixture.window(2).id])
+        XCTAssertEqual(
+            move?.stackMembers.first?.offsetY ?? 0,
+            fixture.span(of: 1).minY - fixture.span(of: 2).minY,
+            accuracy: 0.5
+        )
+    }
+
+    func testAWholeStackMergesIntoTheTargetWithEveryWindowSharingTheHeightEvenly() {
+        var fixture = makeFixture()
+        fixture.stack(2, onto: 1)
+        let target = fixture.column(3)
+        XCTAssertTrue(fixture.beginStack(2))
+
+        XCTAssertEqual(fixture.setStackMode(true, at: fixture.lowerHalf(of: 3)), .changed)
+
+        XCTAssertEqual(fixture.storage(target), [fixture.tokens[1], fixture.tokens[2], fixture.tokens[3]])
+        let heights = fixture.spans(target).map { $0.maxY - $0.minY }
+        XCTAssertEqual(heights.count, 3)
+        XCTAssertEqual(heights.max() ?? 0, heights.min() ?? 1, accuracy: 1)
+        XCTAssertTrue(fixture.endStacking())
+        XCTAssertTrue(fixture.finishStackDrop())
+
+        XCTAssertEqual(fixture.columnOrder(), [
+            [fixture.tokens[0]],
+            [fixture.tokens[1], fixture.tokens[2], fixture.tokens[3]],
+            [fixture.tokens[4]]
+        ])
+    }
+
+    func testLeavingTheTargetGivesTheStackAndTheTargetTheirHeightsBack() {
+        var fixture = makeFixture()
+        fixture.stack(2, onto: 1)
+        fixture.window(3).height = .fixed(700)
+        fixture.window(1).height = .fixed(300)
+        let home = fixture.column(1)
+        XCTAssertTrue(fixture.beginStack(2))
+        XCTAssertEqual(fixture.setStackMode(true, at: fixture.lowerHalf(of: 3)), .changed)
+        XCTAssertEqual(fixture.window(3).height, .default)
+
+        XCTAssertEqual(fixture.setStackMode(false, at: fixture.lowerHalf(of: 3)), .changed)
+
+        XCTAssertEqual(fixture.storage(home), [fixture.tokens[1], fixture.tokens[2]])
+        XCTAssertEqual(fixture.window(1).height, .fixed(300))
+        XCTAssertEqual(fixture.window(3).height, .fixed(700))
+    }
+
+    func testAFreeAreaThatHoldsTheStackKeepsEveryHeight() {
+        var fixture = makeFixture()
+        fixture.stack(2, onto: 1)
+        fixture.window(1).height = .fixed(150)
+        fixture.window(2).height = .fixed(150)
+        fixture.window(3).height = .fixed(200)
+        XCTAssertTrue(fixture.beginStack(2))
+
+        XCTAssertEqual(fixture.setStackMode(true, at: fixture.lowerHalf(of: 3)), .changed)
+
+        XCTAssertEqual(fixture.window(3).height, .fixed(200))
+        for index in [1, 2] {
+            XCTAssertEqual(fixture.span(of: index).maxY - fixture.span(of: index).minY, 150, accuracy: 1)
+        }
+    }
+
+    func testAStackThatCannotFitOpensNothingAndReleasingWithTheModifierSendsItBack() {
+        var fixture = makeFixture()
+        fixture.stack(2, onto: 1)
+        let order = fixture.columnOrder()
+        for (index, height) in [(1, 250), (2, 250), (3, 500)] {
+            fixture.window(index).constraints = WindowSizeConstraints(
+                minSize: CGSize(width: 0, height: height),
+                maxSize: .zero,
+                isFixed: false
+            )
+        }
+        XCTAssertTrue(fixture.beginStack(2))
+        _ = fixture.move(to: fixture.lowerHalf(of: 3), at: 1)
+
+        _ = fixture.setStackMode(true, at: fixture.lowerHalf(of: 3))
+        XCTAssertNil(fixture.engine.liveColumnMove?.landing)
+        XCTAssertTrue(fixture.engine.liveColumnMoveEnd(
+            releasedAt: fixture.lowerHalf(of: 3),
+            stacking: true,
+            context: fixture.context,
+            state: &fixture.state
+        ))
+
+        XCTAssertNil(fixture.engine.liveColumnMove)
+        XCTAssertFalse(fixture.engine.isLiveStackDropPending(in: fixture.workspaceId))
+        XCTAssertEqual(fixture.columnOrder(), order)
+    }
+
+    func testATabbedTargetTakesEveryWindowOfTheStackAsATab() {
+        var fixture = makeFixture()
+        fixture.stack(2, onto: 1)
+        let target = fixture.makeTabbed(3, tabCount: 2, activeTab: 0)
+        let shown = fixture.engine.projectedActiveWindow(in: target, workspaceId: fixture.workspaceId)
+        XCTAssertTrue(fixture.beginStack(2))
+
+        XCTAssertEqual(fixture.setStackMode(true, at: fixture.point(inColumnOf: 3, y: 400)), .changed)
+
+        XCTAssertEqual(target.windowNodes.count, 4)
+        XCTAssertTrue(fixture.engine.projectedActiveWindow(in: target, workspaceId: fixture.workspaceId) === shown)
+        XCTAssertTrue(fixture.endStacking())
+        XCTAssertTrue(fixture.finishStackDrop())
+        XCTAssertEqual(target.windowNodes.count, 4)
+        XCTAssertTrue(fixture.window(1).parent === target)
+        XCTAssertTrue(fixture.window(2).parent === target)
     }
 
     func testAWindowThatBecomesTiledGlidesFromWhereItWasIntoItsSlot() {

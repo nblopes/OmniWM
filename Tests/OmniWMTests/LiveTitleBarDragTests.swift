@@ -349,17 +349,44 @@ final class LiveTitleBarDragTests: NiriInteractionTestCase {
         XCTAssertEqual(fixture.order(), order)
     }
 
+    func testAPlainDragOfAStackedWindowMovesTheWholeColumnWithItsMateFollowing() throws {
+        let fixture = try makeFixture(pid: 938_034, stackFirstTwo: true)
+        let (lower, upper) = (fixture.tokens[0], fixture.tokens[1])
+        let stack = try column(holding: lower, in: fixture)
+        let gap = try fixture.frame(upper).minY - fixture.frame(lower).minY
+
+        try fixture.startLiveDrag(lower)
+
+        let move = try XCTUnwrap(fixture.engine.liveColumnMove)
+        XCTAssertTrue(move.isWholeColumn)
+        XCTAssertTrue(move.isWholeStack)
+        XCTAssertFalse(move.inStack)
+        let dragged = try fixture.frame(lower).offsetBy(dx: 40, dy: 25)
+        try fixture.macOSMoves(lower, to: dragged)
+        let followed = try XCTUnwrap(fixture.engine.liveFloatingFrame(for: upper, in: fixture.workspaceId))
+        XCTAssertEqual(followed.minX, dragged.minX, accuracy: 0.5)
+        XCTAssertEqual(followed.minY - dragged.minY, gap, accuracy: 1)
+        XCTAssertEqual(stack.windowNodes.map(\.token), [lower, upper])
+        XCTAssertFalse(fixture.handler.wantsLiveStackMode(move))
+        fixture.handler.modifierFlagsProvider = { .maskAlternate }
+        XCTAssertTrue(fixture.handler.wantsLiveStackMode(move))
+    }
+
     func testAStackedWindowStartsALiveDragAndMovesWithinItsStack() throws {
         let fixture = try makeFixture(pid: 938_004, stackFirstTwo: true)
         let (lower, upper) = (fixture.tokens[0], fixture.tokens[1])
         let stack = try column(holding: lower, in: fixture)
         XCTAssertEqual(stack.windowNodes.map(\.token), [lower, upper])
 
+        fixture.handler.modifierFlagsProvider = { .maskAlternate }
         try fixture.startLiveDrag(lower)
+        fixture.handler.modifierFlagsProvider = { [] }
 
         XCTAssertTrue(fixture.handler.isLiveColumnDragActive)
         XCTAssertEqual(fixture.engine.liveColumnMove?.inStack, true)
         let drop = try fixture.centre(of: upper)
+        fixture.drag(to: CGPoint(x: drop.x, y: drop.y + 2))
+        XCTAssertEqual(fixture.engine.liveColumnMove?.stackMode, false)
         fixture.drag(to: drop)
         XCTAssertEqual(stack.windowNodes.map(\.token), [upper, lower])
         fixture.handler.dispatchMouseUp(at: drop)

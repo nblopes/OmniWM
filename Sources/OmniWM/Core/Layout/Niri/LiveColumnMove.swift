@@ -157,6 +157,13 @@ struct LiveColumnMove {
         }
     }
 
+    struct StackMember: Equatable {
+        let windowId: NodeId
+        let sizing: WindowSizing
+        let offsetY: CGFloat
+        let height: CGFloat
+    }
+
     struct OriginalSlot: Equatable {
         let columnId: NodeId
         let index: Int
@@ -219,6 +226,13 @@ struct LiveColumnMove {
     var passed: Passed?
     var sideBySideIds: Set<NodeId> = []
     var carry: Carry?
+    var stackMembers: [StackMember] = []
+    var followFrame: CGRect?
+    var mergeHeights: [MateHeight] = []
+
+    var isWholeStack: Bool {
+        !stackMembers.isEmpty
+    }
 
     func isStill(at cursor: CGPoint) -> Bool {
         guard let still = awaitsPointerMoveFrom else { return false }

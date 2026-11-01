@@ -9,6 +9,7 @@ extension NiriLayoutEngine {
         windowId: NodeId,
         windowToken: WindowToken,
         pullsTab: Bool = false,
+        movesStack: Bool = false,
         canCarry: Bool = false,
         context: NiriInteractionContext,
         state: inout ViewportState
@@ -32,8 +33,9 @@ extension NiriLayoutEngine {
             )
             return false
         }
-        let isWholeColumn = column.isTabbed && !pullsTab
-        let inStack = projectedWindows(in: column, workspaceId: context.workspaceId).count > 1 && !isWholeColumn
+        let isStack = projectedWindows(in: column, workspaceId: context.workspaceId).count > 1
+        let isWholeColumn = !pullsTab && (column.isTabbed || movesStack && isStack)
+        let inStack = isStack && !isWholeColumn
         guard inStack || canCarry || projectedColumns(in: context.workspaceId).count > 1 else {
             MouseTrace.record("live-drag begin refused lone-column")
             return false
@@ -71,6 +73,9 @@ extension NiriLayoutEngine {
             originalViewPosition: (positions[activeColumn.id] ?? 0) + state.viewOffset
         )
         liveColumnMove?.sideBySideIds = sideBySideVisibleColumns(around: column, context: context, state: state)
+        if isWholeColumn, !column.isTabbed {
+            liveColumnMove?.stackMembers = liveStackMembers(of: column, grabbing: window, context: context)
+        }
         retargetActiveColumn(to: column, context: context, state: &state)
         state.selectedNodeId = windowId
         return true
@@ -376,6 +381,10 @@ extension NiriLayoutEngine {
         if stacking, move.landing == nil, let cursor,
            !liveColumnMoveLandAtRelease(cursor, move: &move, context: context, state: &state)
         {
+            if move.isWholeStack {
+                liveColumnMove = move
+                return liveColumnMoveCancel(context: context, state: &state)
+            }
             liveColumnMoveToStripEnd(at: cursor, move: &move, context: context, state: &state)
         }
         if stacking, move.landing != nil {

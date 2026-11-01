@@ -60,6 +60,7 @@ extension MouseEventHandler {
     ) -> Bool {
         if drag.liveDrag {
             state.nativeTitleBarDrag = drag
+            followLiveStack(entry)
             return true
         }
         guard beginLiveColumnDragIfEligible(&drag, entry: entry) else { return false }
@@ -104,27 +105,18 @@ extension MouseEventHandler {
               let observed = nativeWindowFrameProvider(entry.axRef),
               Self.isNativeMove(from: start, to: observed),
               let engine = controller.niriEngine,
-              let context = liveColumnContext(for: entry.workspaceId),
               let window = engine.findNode(for: entry.token, in: entry.workspaceId)
         else { return false }
 
         finishLiveStackDrop(in: entry.workspaceId)
-        let began = controller.workspaceManager.withNiriViewportState(for: entry.workspaceId) { viewportState in
-            engine.liveColumnMoveBegin(
-                windowId: window.id,
-                windowToken: entry.token,
-                canCarry: hasOtherLiveStrip(than: entry.workspaceId),
-                context: context,
-                state: &viewportState
-            )
-        }
-        guard began else {
+        guard beginLiveColumnMove(of: window, entry: entry, engine: engine) else {
             traceLiveDragDecline("engine-refused token=\(TraceFormat.token(entry.token))")
             drag.liveDragDeclined = true
             return false
         }
         drag.liveDrag = true
         drag.adoptionStartFrame = start
+        followLiveStack(entry)
         state.deferredClickScroll = nil
         if let location = state.liveDragLocation,
            let monitor = controller.workspaceManager.monitor(for: entry.workspaceId)
@@ -246,11 +238,8 @@ extension MouseEventHandler {
     }
 
     func wantsLiveStackMode(_ move: LiveColumnMove) -> Bool {
-        guard !move.isWholeColumn, let controller else { return false }
-        return Self.mouseMoveModifiersMatch(
-            state.liveDragModifiers ?? modifierFlagsProvider(),
-            required: controller.settings.niri.naturalWindowDragModifier.cgEventFlags
-        )
+        guard !move.isWholeColumn || move.isWholeStack else { return false }
+        return wantsLiveStackMode()
     }
 
     func handleNiriAnimationsSettled(in workspaceId: WorkspaceDescriptor.ID) {
