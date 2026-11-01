@@ -367,6 +367,11 @@ final class LiveTitleBarDragTests: NiriInteractionTestCase {
         XCTAssertEqual(followed.minX, dragged.minX, accuracy: 0.5)
         XCTAssertEqual(followed.minY - dragged.minY, gap, accuracy: 1)
         XCTAssertEqual(stack.windowNodes.map(\.token), [lower, upper])
+        let pointer = try XCTUnwrap(fixture.handler.state.liveDragLocation)
+        fixture.drag(to: CGPoint(x: pointer.x + 30, y: pointer.y + 10))
+        let ahead = try XCTUnwrap(fixture.engine.liveFloatingFrame(for: upper, in: fixture.workspaceId))
+        XCTAssertEqual(ahead.minX - followed.minX, 30, accuracy: 0.5)
+        XCTAssertEqual(ahead.minY - followed.minY, 10, accuracy: 0.5)
         XCTAssertFalse(fixture.handler.wantsLiveStackMode(move))
         fixture.handler.modifierFlagsProvider = { .maskAlternate }
         XCTAssertTrue(fixture.handler.wantsLiveStackMode(move))

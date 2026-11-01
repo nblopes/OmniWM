@@ -28,18 +28,45 @@ extension MouseEventHandler {
     }
 
     func followLiveStack(_ entry: WindowState) {
-        guard let controller,
-              let engine = controller.niriEngine,
+        guard let engine = controller?.niriEngine,
               let move = engine.liveColumnMove,
               move.isWholeStack,
               move.windowToken == entry.token,
               let observed = nativeWindowFrameProvider(entry.axRef),
-              observed != move.followFrame
+              let pointer = state.liveDragLocation
         else { return }
-        engine.liveColumnMove?.followFrame = observed
-        controller.layoutRefreshController.requestImmediateRelayout(
-            reason: .interactiveGesture,
-            affectedWorkspaceIds: [move.workspaceId]
-        )
+        engine.liveColumnMove?.followAnchor = .init(frame: observed, pointer: pointer)
+        moveLiveStackFollowers(to: observed)
+    }
+
+    func followLiveStack(to pointer: CGPoint) {
+        guard let anchor = controller?.niriEngine?.liveColumnMove?.followAnchor else { return }
+        moveLiveStackFollowers(to: anchor.frame.offsetBy(
+            dx: pointer.x - anchor.pointer.x,
+            dy: pointer.y - anchor.pointer.y
+        ))
+    }
+
+    private func moveLiveStackFollowers(to frame: CGRect) {
+        guard let controller,
+              let engine = controller.niriEngine,
+              var move = engine.liveColumnMove,
+              move.isWholeStack,
+              frame != move.followFrame
+        else { return }
+        move.followFrame = frame
+        engine.liveColumnMove?.followFrame = frame
+        let targets = move.stackMembers.compactMap { member -> SkyLightPositionTarget? in
+            guard member.windowId != move.windowId,
+                  let token = (engine.findNode(by: member.windowId, in: move.workspaceId) as? NiriWindow)?.token,
+                  let followed = engine.liveFollowingFrame(for: token, move: move)
+            else { return nil }
+            return .init(token: token, frame: followed)
+        }
+        guard controller.axManager.applyPositionsViaSkyLight(targets) == .submitted else { return }
+        for target in targets {
+            controller.axManager.recordSkyLightMove(windowId: target.token.windowId, origin: target.frame.origin)
+            controller.axManager.forceApplyNextFrame(for: target.token.windowId)
+        }
     }
 }

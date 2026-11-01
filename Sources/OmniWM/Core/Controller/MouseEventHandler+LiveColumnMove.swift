@@ -50,6 +50,7 @@ extension MouseEventHandler {
         state.liveDragModifiers = nil
         resumeHandedOverLiveColumnDrag(at: location)
         guard isLiveColumnDragActive else { return false }
+        followLiveStack(to: location)
         updateLiveColumnDrag(at: location)
         return true
     }
