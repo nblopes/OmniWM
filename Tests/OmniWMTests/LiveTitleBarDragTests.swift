@@ -376,7 +376,8 @@ final class LiveTitleBarDragTests: NiriInteractionTestCase {
         let tabs = try XCTUnwrap(fixture.controller.niriLayoutHandler.desiredTabRailInfos().first {
             $0.owner == .niriColumn(stack.id)
         })
-        XCTAssertEqual(tabs.tileFrame, moved)
+        XCTAssertEqual(tabs.tileFrame.maxX, moved.maxX, accuracy: 0.5)
+        XCTAssertEqual(moved.minX - tabs.tileFrame.minX, fixture.engine.tabContentInset(for: stack), accuracy: 0.5)
         XCTAssertEqual(tabs.tabCount, 2)
         let hidden = grabbed == lower ? upper : lower
         XCTAssertNil(fixture.engine.liveFloatingFrame(for: hidden, in: fixture.workspaceId))
@@ -393,6 +394,17 @@ final class LiveTitleBarDragTests: NiriInteractionTestCase {
         XCTAssertNil(fixture.engine.liveColumnMove)
         XCTAssertEqual(stack.windowNodes.map(\.token), [lower, upper])
         XCTAssertFalse(stack.isTabbed)
+        XCTAssertNil(fixture.handler.state.foldedStackColumnId)
+
+        fixture.handler.handleStackRailDrag(StackRailDrag(
+            rail: StackRail(columnId: stack.id, workspaceId: fixture.workspaceId, frame: .zero),
+            location: press
+        ))
+        XCTAssertTrue(stack.isTabbed)
+        fixture.handler.cancelLiveColumnDrag()
+        XCTAssertNil(fixture.engine.liveColumnMove)
+        XCTAssertFalse(stack.isTabbed)
+        XCTAssertEqual(stack.windowNodes.map(\.token), [lower, upper])
     }
 
     func testOnlyAStackGetsARailAndOnlyWhileTheModifierIsHeld() throws {
@@ -1802,13 +1814,17 @@ final class LiveTitleBarDragTests: NiriInteractionTestCase {
         let other = try column(holding: fixture.tokens[4], in: fixture)
         XCTAssertNotEqual(try railCommand(for: dragged, in: fixture).visibleTileFrame, .null)
         XCTAssertEqual(Set(railOwners(fixture)), [.niriColumn(dragged.id), .niriColumn(other.id)])
+        let restingRail = try railCommand(for: dragged, in: fixture).tileFrame
+        let restingWindow = try fixture.frame(fixture.tokens[1])
 
         try fixture.startLiveDrag(fixture.tokens[1])
         let moved = try fixture.frame(fixture.tokens[1]).offsetBy(dx: 40, dy: 0)
         try fixture.macOSMoves(fixture.tokens[1], to: moved)
         _ = try fixture.frames()
 
-        XCTAssertEqual(try railCommand(for: dragged, in: fixture).tileFrame, moved)
+        let draggedRail = try railCommand(for: dragged, in: fixture).tileFrame
+        XCTAssertEqual(moved.minX - draggedRail.minX, restingWindow.minX - restingRail.minX, accuracy: 0.5)
+        XCTAssertEqual(draggedRail.maxX, moved.maxX, accuracy: 0.5)
         XCTAssertNotEqual(try railCommand(for: other, in: fixture).visibleTileFrame, .null)
         XCTAssertEqual(Set(railOwners(fixture)), [.niriColumn(dragged.id), .niriColumn(other.id)])
 

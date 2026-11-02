@@ -1447,36 +1447,6 @@ final class NiriLiveStackModeTests: XCTestCase {
         XCTAssertEqual(move?.isWholeColumn, true)
         XCTAssertEqual(move?.inStack, false)
         XCTAssertEqual(move?.stackMembers.map(\.windowId), [fixture.window(1).id, fixture.window(2).id])
-        let stack = fixture.column(2)
-        XCTAssertTrue(stack.isTabbed)
-        XCTAssertFalse(fixture.window(2).isHiddenInTabbedMode)
-        XCTAssertTrue(fixture.window(1).isHiddenInTabbedMode)
-    }
-
-    func testAFoldedStackUnfoldsWithItsHeightsWhenDroppedOrCancelled() {
-        for cancels in [false, true] {
-            var fixture = makeFixture()
-            fixture.stack(2, onto: 1)
-            fixture.window(1).height = .fixed(300)
-            let stack = fixture.column(1)
-            let activeBefore = stack.activeTileIdx
-            XCTAssertTrue(fixture.beginStack(2))
-            XCTAssertTrue(stack.isTabbed)
-
-            if cancels {
-                XCTAssertTrue(fixture.engine.liveColumnMoveCancel(context: fixture.context, state: &fixture.state))
-            } else {
-                _ = fixture.move(to: fixture.point(inColumnOf: 3, y: 450), at: 1)
-                XCTAssertTrue(fixture.engine.liveColumnMoveEnd(context: fixture.context, state: &fixture.state))
-            }
-
-            XCTAssertNil(fixture.engine.liveColumnMove)
-            XCTAssertFalse(stack.isTabbed, "cancels=\(cancels)")
-            XCTAssertEqual(stack.activeTileIdx, activeBefore)
-            XCTAssertEqual(fixture.storage(stack), [fixture.tokens[1], fixture.tokens[2]])
-            XCTAssertFalse(fixture.window(1).isHiddenInTabbedMode)
-            XCTAssertEqual(fixture.window(1).height, .fixed(300))
-        }
     }
 
     func testAWholeStackMergesIntoTheTargetWithEveryWindowSharingTheHeightEvenly() {
@@ -1514,8 +1484,6 @@ final class NiriLiveStackModeTests: XCTestCase {
         XCTAssertEqual(fixture.setStackMode(false, at: fixture.lowerHalf(of: 3)), .changed)
 
         XCTAssertEqual(fixture.storage(home), [fixture.tokens[1], fixture.tokens[2]])
-        XCTAssertTrue(home.isTabbed)
-        XCTAssertTrue(fixture.window(1).isHiddenInTabbedMode)
         XCTAssertEqual(fixture.window(1).height, .fixed(300))
         XCTAssertEqual(fixture.window(3).height, .fixed(700))
     }

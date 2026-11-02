@@ -177,13 +177,22 @@ extension MouseEventHandler {
     }
 
     private func toggleTabbedFromDoubleClick(_ target: NaturalDoubleClickTarget) {
+        toggleTabbed(showing: target.window, handle: target.handle, column: target.column, in: target.workspaceId)
+    }
+
+    func toggleTabbed(
+        showing window: NiriWindow,
+        handle: WindowHandle,
+        column: NiriContainer,
+        in workspaceId: WorkspaceDescriptor.ID
+    ) {
         guard let controller, let engine = controller.niriEngine else { return }
-        if !target.column.isTabbed {
-            controller.workspaceManager.withEngineMutationScope(in: target.workspaceId) {
-                engine.activateWindow(target.window.id, in: target.workspaceId)
+        if !column.isTabbed {
+            controller.workspaceManager.withEngineMutationScope(in: workspaceId) {
+                engine.activateWindow(window.id, in: workspaceId)
             }
         }
-        controller.niriLayoutHandler.toggleColumnTabbed(target: .window(target.handle))
+        controller.niriLayoutHandler.toggleColumnTabbed(target: .window(handle))
     }
 
     private func stretchColumnFromDoubleClick(_ target: NaturalDoubleClickTarget, rightSide: Bool) {

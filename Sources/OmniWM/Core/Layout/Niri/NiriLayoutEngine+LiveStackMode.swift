@@ -223,7 +223,6 @@ extension NiriLayoutEngine {
         }
         if liveColumnMove == nil, liveStackDrop?.windowId != previous.windowId {
             restoreLiveMergeHeights(previous.mergeHeights, in: previous.workspaceId)
-            unfoldLiveStack(of: previous)
         }
         if liveColumnMove == nil, liveStackDrop?.windowId != previous.windowId,
            let saved = previous.mateHeight,

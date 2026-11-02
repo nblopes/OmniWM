@@ -22,40 +22,6 @@ extension NiriLayoutEngine {
         }
     }
 
-    func foldLiveStack(_ column: NiriContainer, showing window: NiriWindow, context: NiriInteractionContext) {
-        let previous = liveWindowPlaces(in: [column], context: context)
-        if let index = column.windowNodes.firstIndex(where: { $0 === window }) {
-            column.setActiveTileIdx(index)
-        }
-        guard setColumnDisplay(
-            .tabbed,
-            for: column,
-            in: context.workspaceId,
-            motion: context.motion,
-            orientation: context.orientation
-        ) else { return }
-        updateTabbedColumnVisibility(column: column)
-        column.cachedWidth = 0
-        animateDisplayChange(of: column, from: previous, context: context)
-    }
-
-    func unfoldLiveStack(of move: LiveColumnMove, context: NiriInteractionContext? = nil) {
-        guard move.isWholeStack,
-              let column = liveColumn(withId: move.homeColumnId, in: move.workspaceId),
-              !column.windowNodes.isEmpty,
-              column.displayMode != move.originalSlot.displayMode
-        else { return }
-        let shown = projectedActiveWindow(in: column, workspaceId: move.workspaceId)
-        let previous = context.map { liveWindowPlaces(in: [column], context: $0) } ?? [:]
-        column.displayMode = move.originalSlot.displayMode
-        column.setActiveTileIdx(move.originalSlot.activeTileIdx)
-        updateTabbedColumnVisibility(column: column)
-        column.cachedWidth = 0
-        if let context {
-            animateDisplayChange(of: column, from: previous, onlyMoving: shown, context: context)
-        }
-    }
-
     func liveRailFrame(of move: LiveColumnMove, at time: TimeInterval = CACurrentMediaTime()) -> CGRect? {
         guard let target = move.railStart,
               let window = findNode(by: move.windowId, in: move.workspaceId) as? NiriWindow
@@ -75,7 +41,9 @@ extension NiriLayoutEngine {
               column.isTabbed,
               liveDraggedColumn(for: move) === column
         else { return nil }
-        return move.railStart == nil ? move.draggedFrame : liveRailFrame(of: move)
+        guard let window = move.railStart == nil ? move.draggedFrame : liveRailFrame(of: move) else { return nil }
+        let inset = tabContentInset(for: column)
+        return CGRect(x: window.minX - inset, y: window.minY, width: window.width + inset, height: window.height)
     }
 
     func liveCarriedWindows(for move: LiveColumnMove) -> [NiriWindow] {

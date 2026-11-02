@@ -76,5 +76,6 @@ extension MouseEventHandler {
         moveLiveTabPull(to: location)
         let released = engine.liveColumnMove.flatMap { engine.liveFloatingFrame(for: pull.token, in: $0.workspaceId) }
         _ = finishLiveColumnDrag(token: pull.token, releaseFrame: released)
+        unfoldDraggedStack(showing: pull.token)
     }
 }

@@ -34,34 +34,50 @@ extension MouseEventHandler {
               let engine = controller.niriEngine,
               let context = liveColumnContext(for: workspaceId),
               let column = engine.liveColumn(withId: drag.rail.columnId, in: workspaceId),
-              let window = engine.projectedWindows(in: column, workspaceId: workspaceId).first
+              !column.isTabbed,
+              let window = engine.projectedWindows(in: column, workspaceId: workspaceId).last,
+              let handle = controller.workspaceManager.handle(for: window.token)
         else { return }
         finishLiveStackDrop(in: workspaceId)
-        let viewport = controller.workspaceManager.niriViewportState(for: workspaceId)
-        guard let startFrame = engine.liveWindowFrame(of: window, in: column, context: context, state: viewport),
-              controller.workspaceManager.withNiriViewportState(for: workspaceId, { viewportState in
-                  engine.liveColumnMoveBegin(
-                      windowId: window.id,
-                      windowToken: window.token,
-                      movesStack: true,
-                      context: context,
-                      state: &viewportState
-                  )
-              })
-        else { return }
-        state.liveTabPull = .init(
-            token: window.token,
-            anchorLocation: drag.location,
-            startFrame: engine.liveColumnMove?.railStart ?? startFrame
-        )
-        if engine.hasAnyWindowAnimationsRunning(in: workspaceId) {
-            controller.layoutRefreshController.startScrollAnimation(for: workspaceId)
+        let members = engine.liveStackMembers(of: column, grabbing: window, context: context)
+        toggleTabbed(showing: window, handle: handle, column: column, in: workspaceId)
+        guard column.isTabbed else { return }
+        state.foldedStackColumnId = column.id
+        guard controller.workspaceManager.withNiriViewportState(for: workspaceId, { viewportState in
+            engine.liveColumnMoveBegin(
+                windowId: window.id,
+                windowToken: window.token,
+                movesStack: true,
+                context: context,
+                state: &viewportState
+            )
+        }), let railStart = engine.liveColumnMove?.railStart
+        else {
+            unfoldDraggedStack(showing: window.token)
+            return
         }
+        engine.liveColumnMove?.stackMembers = members
+        state.liveTabPull = .init(token: window.token, anchorLocation: drag.location, startFrame: railStart)
         state.deferredClickScroll = nil
         raiseLiveStack()
         controller.refreshStackRails()
         startLiveDragKeyCapture()
         moveLiveTabPull(to: drag.location)
+    }
+
+    func unfoldDraggedStack(showing token: WindowToken) {
+        guard let columnId = state.foldedStackColumnId else { return }
+        state.foldedStackColumnId = nil
+        guard let controller,
+              let engine = controller.niriEngine,
+              let entry = controller.workspaceManager.entry(for: token),
+              let window = engine.findNode(for: token, in: entry.workspaceId),
+              let column = engine.findColumn(containing: window, in: entry.workspaceId),
+              column.id == columnId,
+              column.isTabbed,
+              let handle = controller.workspaceManager.handle(for: token)
+        else { return }
+        toggleTabbed(showing: window, handle: handle, column: column, in: entry.workspaceId)
     }
 
     func noteWindowOrderChanged(_ windowId: UInt32) {

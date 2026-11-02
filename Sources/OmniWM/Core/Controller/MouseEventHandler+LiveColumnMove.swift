@@ -359,6 +359,7 @@ extension MouseEventHandler {
         if cancelled {
             refreshLiveColumnLayout(in: move.workspaceId, engine: engine)
         }
+        unfoldDraggedStack(showing: move.windowToken)
     }
 
     private func scheduleLiveHoverCheck(after delay: TimeInterval) {

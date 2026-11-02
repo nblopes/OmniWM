@@ -73,9 +73,8 @@ extension NiriLayoutEngine {
             originalViewPosition: (positions[activeColumn.id] ?? 0) + state.viewOffset
         )
         liveColumnMove?.sideBySideIds = sideBySideVisibleColumns(around: column, context: context, state: state)
-        if isWholeColumn, !column.isTabbed {
+        if isWholeColumn, movesStack {
             liveColumnMove?.stackMembers = liveStackMembers(of: column, grabbing: window, context: context)
-            foldLiveStack(column, showing: window, context: context)
             liveColumnMove?.railStart = liveWindowFrame(of: window, in: column, context: context, state: state)
         }
         retargetActiveColumn(to: column, context: context, state: &state)
@@ -430,7 +429,6 @@ extension NiriLayoutEngine {
         {
             root.insertChild(dragged, at: landingIndex)
         }
-        unfoldLiveStack(of: move, context: context)
         liveColumnMove = nil
         dragged.isLiveHomeSpot = false
         restoreLiveSizing(move.ownSizing, to: dragged)
@@ -524,7 +522,6 @@ extension NiriLayoutEngine {
         if let original = liveColumn(withId: move.originalSlot.columnId, in: context.workspaceId) {
             retargetActiveColumn(to: original, context: context, state: &state)
         }
-        unfoldLiveStack(of: move, context: context)
         restoreLiveOriginalSlot(&move)
         liveColumnMove = move
         guard let dragged = liveDraggedColumn(for: move) else {
