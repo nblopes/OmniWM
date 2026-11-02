@@ -368,7 +368,18 @@ final class LiveTitleBarDragTests: NiriInteractionTestCase {
         XCTAssertTrue(fixture.handler.wantsLiveStackMode(move))
         XCTAssertTrue(stack.isTabbed)
         let grabbed = move.windowToken
+        addTeardownBlock { @MainActor [controller = fixture.controller] in
+            controller.tabRailManager.removeAll()
+        }
+        fixture.controller.surfaceReconciler.reconcileNow()
+        let railKey = TabRailKey(workspaceId: fixture.workspaceId, owner: .niriColumn(stack.id))
+        let railStart = try XCTUnwrap(fixture.controller.tabRailManager.existingWindow(for: railKey) as? TabRailWindow)
+            .appliedFrame
         let start = try XCTUnwrap(fixture.engine.liveFloatingFrame(for: grabbed, in: fixture.workspaceId))
+        fixture.handler.moveLiveTabPull(to: CGPoint(x: press.x + 30, y: press.y + 10))
+        let railMoved = try XCTUnwrap(fixture.controller.tabRailManager.existingWindow(for: railKey) as? TabRailWindow)
+            .appliedFrame
+        XCTAssertEqual(railMoved.minX - railStart.minX, 30, accuracy: 0.5)
         fixture.drag(to: CGPoint(x: press.x + 30, y: press.y + 10))
         let moved = try XCTUnwrap(fixture.engine.liveFloatingFrame(for: grabbed, in: fixture.workspaceId))
         XCTAssertEqual(moved.minX - start.minX, 30, accuracy: 0.5)

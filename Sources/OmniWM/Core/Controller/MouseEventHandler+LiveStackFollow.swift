@@ -118,9 +118,27 @@ extension MouseEventHandler {
               observed != move.draggedFrame
         else { return }
         engine.liveColumnMove?.draggedFrame = observed
+        moveDraggedTabRail()
         controller.layoutRefreshController.requestImmediateRelayout(
             reason: .interactiveGesture,
             affectedWorkspaceIds: [move.workspaceId]
         )
+    }
+
+    func moveDraggedTabRail() {
+        guard let controller,
+              let engine = controller.niriEngine,
+              let move = engine.liveColumnMove,
+              let column = engine.liveDraggedColumn(for: move),
+              let frame = engine.liveDraggedTabsFrame(column),
+              let monitor = controller.workspaceManager.monitor(for: move.workspaceId)
+        else { return }
+        controller.tabRailManager.applyAnimationGeometry([
+            TabRailGeometryCommand(
+                key: TabRailKey(workspaceId: move.workspaceId, owner: .niriColumn(column.id)),
+                tileFrame: frame,
+                visibleTileFrame: frame.intersection(monitor.visibleFrame)
+            )
+        ])
     }
 }

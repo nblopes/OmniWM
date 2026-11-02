@@ -61,6 +61,7 @@ extension MouseEventHandler {
             engine.liveColumnMove?.floatingFrame = pull.startFrame.offsetBy(dx: delta.dx, dy: delta.dy)
         } else {
             engine.liveColumnMove?.railDelta = delta
+            moveDraggedTabRail()
         }
         state.liveDragLocation = location
         state.liveDragModifiers = nil
