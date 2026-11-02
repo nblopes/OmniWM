@@ -56,10 +56,12 @@ extension MouseEventHandler {
               let engine = controller.niriEngine,
               engine.liveColumnMove?.windowToken == pull.token
         else { return }
-        engine.liveColumnMove?.floatingFrame = pull.startFrame.offsetBy(
-            dx: location.x - pull.anchorLocation.x,
-            dy: location.y - pull.anchorLocation.y
-        )
+        let delta = CGVector(dx: location.x - pull.anchorLocation.x, dy: location.y - pull.anchorLocation.y)
+        if engine.liveColumnMove?.railStart == nil {
+            engine.liveColumnMove?.floatingFrame = pull.startFrame.offsetBy(dx: delta.dx, dy: delta.dy)
+        } else {
+            engine.liveColumnMove?.railDelta = delta
+        }
         state.liveDragLocation = location
         state.liveDragModifiers = nil
         updateLiveColumnDrag(at: location)
@@ -72,7 +74,7 @@ extension MouseEventHandler {
     func endLiveTabPull(at location: CGPoint) {
         guard let pull = state.liveTabPull, let controller, let engine = controller.niriEngine else { return }
         moveLiveTabPull(to: location)
-        let released = engine.liveColumnMove?.floatingFrame
+        let released = engine.liveColumnMove.flatMap { engine.liveFloatingFrame(for: pull.token, in: $0.workspaceId) }
         _ = finishLiveColumnDrag(token: pull.token, releaseFrame: released)
     }
 }

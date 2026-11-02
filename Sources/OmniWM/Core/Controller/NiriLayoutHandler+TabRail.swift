@@ -35,8 +35,8 @@ extension NiriLayoutHandler {
         for index in columnSpan.indices where columnSpan[index].isTabbed {
             let column = columnSpan[index]
             let key = TabRailKey(workspaceId: workspaceId, owner: .niriColumn(column.id))
-            guard !engine.isLiveDraggedColumn(column),
-                  let frame = column.renderedFrame,
+            guard !engine.isLiveDraggedColumn(column) || engine.liveDraggedTabsFrame(column) != nil,
+                  let frame = engine.liveDraggedTabsFrame(column) ?? column.renderedFrame,
                   !frame.isNull,
                   !frame.isInfinite,
                   frame.width > 0,
@@ -69,7 +69,9 @@ extension NiriLayoutHandler {
     ) -> [TabRailInfo] {
         guard let controller else { return [] }
         var infos: [TabRailInfo] = []
-        for column in engine.columns(in: workspaceId) where column.isTabbed && !engine.isLiveDraggedColumn(column) {
+        for column in engine.columns(in: workspaceId)
+            where column.isTabbed && (!engine.isLiveDraggedColumn(column) || engine.liveDraggedTabsFrame(column) != nil)
+        {
             let windows = engine.projectedWindows(in: column, workspaceId: workspaceId)
             guard windows.count > 1 else { continue }
 
@@ -85,9 +87,10 @@ extension NiriLayoutHandler {
                 activeVisualIndex: activeVisualIndex,
                 controller: controller
             ).map { tab in
-                tab.token.map { engine.isLiveDraggedWindow($0, in: workspaceId) } == true ? Self.blankTab(tab) : tab
+                tab.token.map { engine.isLiveDraggedWindow($0, in: workspaceId) } == true
+                    && engine.liveDraggedTabsFrame(column) == nil ? Self.blankTab(tab) : tab
             }
-            let candidateFrame = column.renderedFrame ?? column.frame
+            let candidateFrame = engine.liveDraggedTabsFrame(column) ?? column.renderedFrame ?? column.frame
             let frame = candidateFrame.map {
                 !$0.isNull && !$0.isInfinite && $0.width > 0 && $0.height > 0 ? $0 : .zero
             } ?? .zero

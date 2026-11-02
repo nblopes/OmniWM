@@ -121,7 +121,7 @@ extension NiriLayoutEngine {
         guard let move = liveColumnMove, move.windowToken == token, move.workspaceId == workspaceId else {
             return nil
         }
-        return move.floatingFrame
+        return move.railStart == nil ? move.floatingFrame : liveRailFrame(of: move)
     }
 
     private func liveSlotTarget(

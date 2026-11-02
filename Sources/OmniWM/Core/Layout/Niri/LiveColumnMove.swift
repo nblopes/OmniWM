@@ -227,6 +227,9 @@ struct LiveColumnMove {
     var carry: Carry?
     var stackMembers: [StackMember] = []
     var mergeHeights: [MateHeight] = []
+    var railStart: CGRect?
+    var railDelta = CGVector.zero
+    var draggedFrame: CGRect?
 
     var isWholeStack: Bool {
         !stackMembers.isEmpty

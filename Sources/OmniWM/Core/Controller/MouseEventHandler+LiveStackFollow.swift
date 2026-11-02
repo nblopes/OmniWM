@@ -34,8 +34,7 @@ extension MouseEventHandler {
               let engine = controller.niriEngine,
               let context = liveColumnContext(for: workspaceId),
               let column = engine.liveColumn(withId: drag.rail.columnId, in: workspaceId),
-              let window = engine.projectedActiveWindow(in: column, workspaceId: workspaceId)
-              ?? engine.projectedWindows(in: column, workspaceId: workspaceId).first
+              let window = engine.projectedWindows(in: column, workspaceId: workspaceId).first
         else { return }
         finishLiveStackDrop(in: workspaceId)
         let viewport = controller.workspaceManager.niriViewportState(for: workspaceId)
@@ -50,7 +49,14 @@ extension MouseEventHandler {
                   )
               })
         else { return }
-        state.liveTabPull = .init(token: window.token, anchorLocation: drag.location, startFrame: startFrame)
+        state.liveTabPull = .init(
+            token: window.token,
+            anchorLocation: drag.location,
+            startFrame: engine.liveColumnMove?.railStart ?? startFrame
+        )
+        if engine.hasAnyWindowAnimationsRunning(in: workspaceId) {
+            controller.layoutRefreshController.startScrollAnimation(for: workspaceId)
+        }
         state.deferredClickScroll = nil
         raiseLiveStack()
         controller.refreshStackRails()
@@ -83,5 +89,22 @@ extension MouseEventHandler {
         else { return }
         guard let entry = controller.workspaceManager.entry(for: move.windowToken) else { return }
         controller.performWindowFronting(pid: entry.pid, windowId: entry.windowId, axRef: entry.axRef)
+    }
+
+    func followDraggedTabs(_ entry: WindowState) {
+        guard let controller,
+              let engine = controller.niriEngine,
+              let move = engine.liveColumnMove,
+              move.isWholeColumn,
+              move.railStart == nil,
+              move.windowToken == entry.token,
+              let observed = nativeWindowFrameProvider(entry.axRef),
+              observed != move.draggedFrame
+        else { return }
+        engine.liveColumnMove?.draggedFrame = observed
+        controller.layoutRefreshController.requestImmediateRelayout(
+            reason: .interactiveGesture,
+            affectedWorkspaceIds: [move.workspaceId]
+        )
     }
 }
