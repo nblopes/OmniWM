@@ -161,7 +161,7 @@ final class InputTapThread: @unchecked Sendable {
         switch type {
         case .leftMouseDown:
             let flags = event.flags
-            stripNaturalDragOption(from: event, snap: snap)
+            stripNaturalDragOption(from: event, location: location, snap: snap)
             let isMoveCandidate = MouseEventHandler.mouseMoveModifiersMatch(flags, required: snap.moveModifier)
             guard isMoveCandidate else {
                 DispatchQueue.main.async {
@@ -368,10 +368,14 @@ extension InputTapThread {
 }
 
 extension InputTapThread {
-    private nonisolated func stripNaturalDragOption(from event: CGEvent, snap: TapFilterSnapshot) {
+    private nonisolated func stripNaturalDragOption(
+        from event: CGEvent,
+        location: CGPoint,
+        snap: TapFilterSnapshot
+    ) {
         let flags = event.flags
         guard MouseEventHandler.mouseMoveModifiersMatch(flags, required: snap.naturalDragModifier),
-              naturalDragCanStart(windowId: MouseEventHandler.eventWindowIdUnderPointer(event))
+              naturalDragCanStart(windowId: MouseEventHandler.eventWindowIdUnderPointer(event), at: location)
         else { return }
         event.flags = MouseEventHandler.naturalDragPassThroughFlags(
             flags,
@@ -379,16 +383,15 @@ extension InputTapThread {
         )
     }
 
-    private nonisolated func naturalDragCanStart(windowId: Int?) -> Bool {
-        guard let windowId else { return false }
+    private nonisolated func naturalDragCanStart(windowId: Int?, at location: CGPoint) -> Bool {
         if Thread.isMainThread {
             return MainActor.assumeIsolated {
-                MouseEventHandler._instance?.canStartNaturalDrag(windowId: windowId) ?? false
+                MouseEventHandler._instance?.canStartNaturalDrag(windowId: windowId, at: location) ?? false
             }
         }
         return DispatchQueue.main.sync {
             MainActor.assumeIsolated {
-                MouseEventHandler._instance?.canStartNaturalDrag(windowId: windowId) ?? false
+                MouseEventHandler._instance?.canStartNaturalDrag(windowId: windowId, at: location) ?? false
             }
         }
     }
