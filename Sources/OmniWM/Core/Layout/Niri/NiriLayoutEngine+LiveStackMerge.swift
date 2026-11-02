@@ -46,6 +46,43 @@ extension NiriLayoutEngine {
         return CGRect(x: window.minX - inset, y: window.minY, width: window.width + inset, height: window.height)
     }
 
+    func liveDraggedTabs(_ column: NiriContainer) -> (windows: [NiriWindow], active: NiriWindow)? {
+        guard let move = liveColumnMove,
+              move.isWholeStack,
+              liveDraggedTabsFrame(column) != nil,
+              let active = findNode(by: move.windowId, in: move.workspaceId) as? NiriWindow
+        else { return nil }
+        return (liveCarriedWindows(for: move), active)
+    }
+
+    func isLiveFoldedMate(_ window: NiriWindow, in column: NiriContainer) -> Bool {
+        guard let move = liveColumnMove,
+              move.isWholeStack,
+              column.id != move.homeColumnId,
+              window.id != move.windowId
+        else { return false }
+        return move.stackMembers.contains { $0.windowId == window.id }
+    }
+
+    func parkLiveFoldedMates(
+        of projectedColumn: NiriProjectedColumn,
+        at index: Int,
+        visibleRect: CGRect,
+        pass: NiriColumnLayoutPass,
+        result: inout LayoutResult
+    ) {
+        let foldedMates = projectedColumn.windows.filter { isLiveFoldedMate($0, in: projectedColumn.column) }
+        guard !foldedMates.isEmpty else { return }
+        let parkEdge = pass.context.area.hiddenEdge(
+            for: visibleRect,
+            fallback: index == 0 ? .minimum : .maximum,
+            orientation: pass.context.orientation
+        )
+        for window in foldedMates {
+            result.hiddenHandles[window.token] = parkEdge.encodedHideSide
+        }
+    }
+
     func liveCarriedWindows(for move: LiveColumnMove) -> [NiriWindow] {
         guard move.isWholeStack else {
             return [findNode(by: move.windowId, in: move.workspaceId) as? NiriWindow].compactMap(\.self)

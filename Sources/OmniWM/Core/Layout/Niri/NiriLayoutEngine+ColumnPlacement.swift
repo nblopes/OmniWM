@@ -163,6 +163,7 @@ extension NiriLayoutEngine {
                     result.hiddenHandles[windowSpan[index].token] = parkEdge.encodedHideSide
                 }
             }
+            parkLiveFoldedMates(of: projectedColumn, at: idx, visibleRect: visibilityRect, pass: pass, result: &result)
         case let .hidden(hiddenEdge):
             let windowSpan = projectedColumn.windows.span
             for index in windowSpan.indices {

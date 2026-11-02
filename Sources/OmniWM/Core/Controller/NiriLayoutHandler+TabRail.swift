@@ -72,10 +72,11 @@ extension NiriLayoutHandler {
         for column in engine.columns(in: workspaceId)
             where column.isTabbed && (!engine.isLiveDraggedColumn(column) || engine.liveDraggedTabsFrame(column) != nil)
         {
-            let windows = engine.projectedWindows(in: column, workspaceId: workspaceId)
+            let draggedTabs = engine.liveDraggedTabs(column)
+            let windows = draggedTabs?.windows ?? engine.projectedWindows(in: column, workspaceId: workspaceId)
             guard windows.count > 1 else { continue }
 
-            guard let activeWindow = engine.projectedActiveWindow(
+            guard let activeWindow = draggedTabs?.active ?? engine.projectedActiveWindow(
                 in: column,
                 workspaceId: workspaceId
             ) else { continue }

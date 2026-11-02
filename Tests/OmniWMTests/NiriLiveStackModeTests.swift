@@ -84,6 +84,16 @@ final class NiriLiveStackModeTests: XCTestCase {
             ).frames
         }
 
+        func hiddenHandles() -> [WindowToken: HideSide] {
+            engine.calculateLayoutWithVisibility(
+                state: state,
+                workspaceId: workspaceId,
+                monitorFrame: frame,
+                gaps: (gap, gap),
+                orientation: .horizontal
+            ).hiddenHandles
+        }
+
         mutating func begin(_ index: Int) -> Bool {
             engine.liveColumnMoveBegin(
                 windowId: window(index).id,
@@ -1461,8 +1471,13 @@ final class NiriLiveStackModeTests: XCTestCase {
         let heights = fixture.spans(target).map { $0.maxY - $0.minY }
         XCTAssertEqual(heights.count, 3)
         XCTAssertEqual(heights.max() ?? 0, heights.min() ?? 1, accuracy: 1)
+        let hidden = fixture.hiddenHandles()
+        XCTAssertNotNil(hidden[fixture.tokens[1]])
+        XCTAssertNil(hidden[fixture.tokens[2]])
+        XCTAssertNil(hidden[fixture.tokens[3]])
         XCTAssertTrue(fixture.endStacking())
         XCTAssertTrue(fixture.finishStackDrop())
+        XCTAssertNil(fixture.hiddenHandles()[fixture.tokens[1]])
 
         XCTAssertEqual(fixture.columnOrder(), [
             [fixture.tokens[0]],
