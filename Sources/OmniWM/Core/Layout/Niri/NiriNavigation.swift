@@ -259,6 +259,27 @@ extension NiriLayoutEngine {
             scale: scale,
             viewFrame: viewFrame
         )
+        traceSelectionScroll("full", node: node, columns: containers, state: state, context: context)
+    }
+
+    func traceSelectionScroll(
+        _ path: String,
+        node: NiriNode,
+        columns: [NiriContainer],
+        state: ViewportState,
+        context: NiriInteractionContext
+    ) {
+        NiriLayoutTrace.record(.viewport, workspaceId: context.workspaceId, {
+            let target = column(of: node)
+            let index = columns.firstIndex { $0 === target }
+            let durable = target.flatMap { columnIndex(of: $0, in: context.workspaceId) }
+            let widths = columns.map { String(Int($0.settledWidth)) }.joined(separator: ",")
+            let excluded = projectionExclusions(in: context.workspaceId).map { String($0.windowId) }.sorted()
+            return "select path=\(path) node=\(node.id.uuid.uuidString.prefix(6)) "
+                + "col=\(index.map(String.init) ?? "-")/\(columns.count) durable=\(durable.map(String.init) ?? "-") "
+                + "widths=[\(widths)] excluded=[\(excluded.joined(separator: ","))] "
+                + String(format: "off=%.0f", state.viewOffset)
+        }())
     }
 
     func resolvePrimaryContainerSpans(
