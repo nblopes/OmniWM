@@ -82,7 +82,7 @@ extension WMController {
         edgeOverscroll: NiriEdgeOverscroll? = nil,
         containerPrimarySpanPresets: [Double]? = nil,
         defaultContainerPrimarySpan: Double?? = nil,
-        tabbedColumnsFillHeight: Bool? = nil
+        naturalWindowDrag: NaturalWindowDragConfiguration? = nil
     ) {
         niriLayoutHandler.updateNiriConfig(
             visibleContainerCount: visibleContainerCount,
@@ -93,7 +93,7 @@ extension WMController {
             edgeOverscroll: edgeOverscroll,
             containerPrimarySpanPresets: containerPrimarySpanPresets,
             defaultContainerPrimarySpan: defaultContainerPrimarySpan,
-            tabbedColumnsFillHeight: tabbedColumnsFillHeight
+            naturalWindowDrag: naturalWindowDrag
         )
     }
 

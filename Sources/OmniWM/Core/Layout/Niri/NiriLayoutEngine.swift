@@ -302,11 +302,11 @@ final class NiriLayoutEngine {
         edgeOverscroll: NiriEdgeOverscroll? = nil,
         presetContainerPrimarySpans: [PresetSize]? = nil,
         defaultContainerPrimarySpan: CGFloat?? = nil,
-        tabbedColumnsFillHeight: Bool? = nil
+        naturalWindowDrag: NaturalWindowDragConfiguration? = nil
     ) {
         assertSanctionedMutation()
-        if let tabbedColumnsFillHeight {
-            self.tabbedColumnsFillHeight = tabbedColumnsFillHeight
+        if let naturalWindowDrag {
+            applyNaturalWindowDrag(naturalWindowDrag)
         }
         if let max = visibleContainerCount {
             self.visibleContainerCount = max.clamped(to: 1 ... 5)
