@@ -396,18 +396,6 @@ extension NiriLayoutHandler {
         let preservesGesture = state.preservesGestureOffset
             && pass.engine.effectiveSettings(in: pass.wsId).edgeOverscroll != .disabled
             && !removal.removedColumn && removal.removalResult.removedTokens.isEmpty
-        NiriLayoutTrace.record(.viewport, workspaceId: pass.wsId, {
-            let skips = [
-                usesSingleWindowFit ? "single-fit" : nil,
-                preservesGesture ? "gesture-offset" : nil,
-                isGestureOrAnimation ? "motion" : nil,
-                snapshot.isActiveWorkspace ? nil : "inactive",
-                state.selectedNodeId == nil ? "no-selection" : nil,
-                removal.removalResult.visibilityWasCorrected ? "corrected" : nil
-            ].compactMap(\.self)
-            return "selection-pass active=\(state.activeColumnIndex) "
-                + "skip=\(skips.isEmpty ? "none" : skips.joined(separator: "+"))"
-        }())
         if !usesSingleWindowFit,
            !preservesGesture,
            !isGestureOrAnimation,
