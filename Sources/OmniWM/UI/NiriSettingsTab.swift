@@ -180,9 +180,11 @@ private struct GlobalNiriSettingsSection: View {
                         .foregroundStyle(.secondary)
                 }
             }
+        }
+        .id("Niri Layout")
 
+        Section("macOS Fusion") {
             Toggle("macOS Fusion", isOn: Bindable(settings.niri).macOSFusion)
-                .id("macOS Fusion")
                 .onChange(of: settings.niri.macOSFusion) {
                     controller.applyMacOSFusionSettings()
                 }
@@ -263,7 +265,7 @@ private struct GlobalNiriSettingsSection: View {
                 localized: "When dragging a window’s edge resizes it by accident, press this key to put the focused window back as it was, or double-click the window’s title bar. A double-click undoes that window’s last edge resize first, then changes its width."
             )
         }
-        .id("Niri Layout")
+        .id("macOS Fusion")
 
         NiriDefaultSpanSettingsSection(
             allowsGlobal: false,
