@@ -116,8 +116,8 @@ struct SettingsExport: Equatable {
         var moveWindowStacksIntoColumn: Bool?
         var allowOverscroll: Bool?
         var overscrollVisibleStripPercent: Int?
-        var naturalWindowDrag: Bool?
-        var naturalWindowDragModifier: MouseMoveModifierKey?
+        var macOSFusion: Bool?
+        var macOSFusionModifier: MouseMoveModifierKey?
         var edgePeek: Bool?
         var edgePeekPercent: Double?
     }
