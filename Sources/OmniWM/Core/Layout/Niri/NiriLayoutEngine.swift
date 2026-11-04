@@ -313,11 +313,11 @@ final class NiriLayoutEngine {
         edgeOverscroll: NiriEdgeOverscroll? = nil,
         presetContainerPrimarySpans: [PresetSize]? = nil,
         defaultContainerPrimarySpan: CGFloat?? = nil,
-        naturalWindowDrag: NaturalWindowDragConfiguration? = nil
+        macOSFusion: MacOSFusionConfiguration? = nil
     ) {
         assertSanctionedMutation()
-        if let naturalWindowDrag {
-            applyNaturalWindowDrag(naturalWindowDrag)
+        if let macOSFusion {
+            applyMacOSFusion(macOSFusion)
         }
         if let max = visibleContainerCount {
             self.visibleContainerCount = max.clamped(to: 1 ... 5)

@@ -81,7 +81,7 @@ extension WMController {
         edgeOverscroll: NiriEdgeOverscroll? = nil,
         containerPrimarySpanPresets: [Double]? = nil,
         defaultContainerPrimarySpan: Double?? = nil,
-        naturalWindowDrag: NaturalWindowDragConfiguration? = nil
+        macOSFusion: MacOSFusionConfiguration? = nil
     ) {
         niriLayoutHandler.updateNiriConfig(
             visibleContainerCount: visibleContainerCount,
@@ -92,7 +92,7 @@ extension WMController {
             edgeOverscroll: edgeOverscroll,
             containerPrimarySpanPresets: containerPrimarySpanPresets,
             defaultContainerPrimarySpan: defaultContainerPrimarySpan,
-            naturalWindowDrag: naturalWindowDrag
+            macOSFusion: macOSFusion
         )
     }
 

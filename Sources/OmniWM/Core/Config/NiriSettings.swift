@@ -93,11 +93,11 @@ final class NiriSettings {
         min(100, max(1, percent))
     }
 
-    var naturalWindowDrag = NiriSettings.defaults.naturalWindowDrag ?? false {
+    var macOSFusion = NiriSettings.defaults.macOSFusion ?? false {
         didSet { onChange?() }
     }
 
-    var naturalWindowDragModifier = NiriSettings.defaults.naturalWindowDragModifier ?? .option {
+    var macOSFusionModifier = NiriSettings.defaults.macOSFusionModifier ?? .option {
         didSet { onChange?() }
     }
 
@@ -138,8 +138,8 @@ final class NiriSettings {
             moveWindowStacksIntoColumn: moveWindowStacksIntoColumn,
             allowOverscroll: allowOverscroll,
             overscrollVisibleStripPercent: overscrollVisibleStripPercent,
-            naturalWindowDrag: naturalWindowDrag,
-            naturalWindowDragModifier: naturalWindowDragModifier,
+            macOSFusion: macOSFusion,
+            macOSFusionModifier: macOSFusionModifier,
             edgePeek: edgePeek,
             edgePeekPercent: edgePeekPercent
         )
@@ -156,8 +156,8 @@ final class NiriSettings {
             ?? baseline.overscrollVisibleStripPercent ?? 5
         edgeGaps = niri.edgeGaps ?? baseline.edgeGaps ?? true
         moveWindowStacksIntoColumn = niri.moveWindowStacksIntoColumn ?? baseline.moveWindowStacksIntoColumn ?? true
-        naturalWindowDrag = niri.naturalWindowDrag ?? baseline.naturalWindowDrag ?? false
-        naturalWindowDragModifier = niri.naturalWindowDragModifier ?? baseline.naturalWindowDragModifier ?? .option
+        macOSFusion = niri.macOSFusion ?? baseline.macOSFusion ?? false
+        macOSFusionModifier = niri.macOSFusionModifier ?? baseline.macOSFusionModifier ?? .option
         edgePeek = niri.edgePeek ?? baseline.edgePeek ?? false
         edgePeekPercent = NiriSettings.validatedEdgePeekPercent(
             niri.edgePeekPercent ?? baseline.edgePeekPercent ?? BuiltInSettingsDefaults.niriEdgePeekPercent
