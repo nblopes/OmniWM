@@ -101,6 +101,7 @@ final class NiriWorkspaceState {
     var attachedMonitorId: Monitor.ID?
     var manualWidthColumnCount: Int?
     var manualHeightColumnCount: Int?
+    var layoutHistory = NiriLayoutHistory()
 
     init(workspaceId: WorkspaceDescriptor.ID) {
         root = NiriRoot(workspaceId: workspaceId)
