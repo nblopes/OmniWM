@@ -238,14 +238,10 @@ extension MouseEventHandler {
                 retireNativeTitleBarDragAtInputBoundary()
             }
         }
-        if authoritative, button == .left,
-           clickCount == 2 || continuesFusionClickChain(at: location, modifiers: modifiers),
-           handleFusionDoubleClick(at: location, modifiers: modifiers, chained: clickCount != 2)
+        if authoritative, button == .left, clickCount == 2,
+           handleFusionDoubleClick(at: location, modifiers: modifiers)
         {
             return true
-        }
-        if button == .left {
-            disarmFusionClickChain()
         }
         return dispatchMouseDown(
             at: location,
