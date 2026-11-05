@@ -196,10 +196,12 @@ extension MouseEventHandler {
             ? controller.axManager.lastAppliedFrame(for: drag.token.windowId)
             : nil
         drag.adoptionStartFrame = hadUnsettledFrameWrite ? nil : startFrame ?? fusionStartFrame
-        drag.liveStartFrame = controller.axManager.lastAppliedFrame(for: drag.token.windowId) ?? startFrame
-            ?? controller.workspaceManager.entry(for: drag.token).flatMap { entry in
-                controller.niriEngine?.findNode(for: drag.token, in: entry.workspaceId)?.frame
-            }
+        if controller.settings.niri.macOSFusion {
+            drag.liveStartFrame = fusionStartFrame ?? startFrame
+                ?? controller.workspaceManager.entry(for: drag.token).flatMap { entry in
+                    controller.niriEngine?.findNode(for: drag.token, in: entry.workspaceId)?.frame
+                }
+        }
         MouseTrace.record(
             "title-bar drag dragging token=\(TraceFormat.token(drag.token)) "
                 + "awaitingWrite=\(hadUnsettledFrameWrite) "
