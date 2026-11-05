@@ -600,6 +600,7 @@ extension NiriLayoutEngine {
         keepsStripEndsOnScreen = configuration.enabled
         centersFittingStrips = configuration.enabled
         clipsOverflowToDisplay = configuration.enabled
+        keepsWindowWidths = configuration.enabled
         edgePeekShare = configuration.edgePeekShare
         if !configuration.enabled {
             forgetTopRests()
