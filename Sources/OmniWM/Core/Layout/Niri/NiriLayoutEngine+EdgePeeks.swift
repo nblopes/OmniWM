@@ -73,6 +73,7 @@ extension NiriLayoutEngine {
                 columnCap = max(1, room.maxX - room.minX - 2 * gap)
             }
             guard column.edgePeekCap != columnCap else { continue }
+            if columnCap != nil { hasSetEdgePeekCaps = true }
             column.edgePeekCap = columnCap
             column.invalidateCachedPrimarySpan(orientation: .horizontal)
         }
@@ -144,7 +145,7 @@ extension NiriLayoutEngine {
         let monitor = monitorForWorkspace(workspaceId)
         guard !isLiveColumnMoveActive(in: workspaceId),
               edgePeekShare(onDisplayWith: monitor?.frame) != nil
-              || columns(in: workspaceId).contains(where: { $0.edgePeekCap != nil })
+              || hasSetEdgePeekCaps && columns(in: workspaceId).contains(where: { $0.edgePeekCap != nil })
         else { return }
         let orientation = monitor?.orientation ?? .horizontal
         let projected = projectedColumns(in: workspaceId)
