@@ -187,10 +187,11 @@ private struct GlobalNiriSettingsSection: View {
             Toggle("macOS Fusion", isOn: Bindable(settings.niri).macOSFusion)
                 .onChange(of: settings.niri.macOSFusion) {
                     controller.applyMacOSFusionSettings()
+                    refreshWindowTilingProbe()
                 }
-                .onAppear(perform: windowTilingSettingsProbe.refresh)
+                .onAppear(perform: refreshWindowTilingProbe)
                 .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-                    windowTilingSettingsProbe.refresh()
+                    refreshWindowTilingProbe()
                 }
 
             SettingsCaption(
@@ -334,6 +335,11 @@ private struct GlobalNiriSettingsSection: View {
 }
 
 private extension GlobalNiriSettingsSection {
+    func refreshWindowTilingProbe() {
+        guard settings.niri.macOSFusion else { return }
+        windowTilingSettingsProbe.refresh()
+    }
+
     var windowTilingNote: some View {
         VStack(alignment: .leading, spacing: 6) {
             Label(
