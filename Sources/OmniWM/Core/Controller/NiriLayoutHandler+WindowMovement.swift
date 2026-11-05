@@ -77,7 +77,7 @@ extension NiriLayoutHandler {
             }
             return NiriStructuralMutation(operation: .columnMoved)
         }
-        let oldFrames = usesPredictedAnimation
+        let oldFrames = usesPredictedAnimation || ctx.engine.windowsFillColumnHeight
             ? ctx.engine.captureWindowFrames(in: ctx.wsId)
             : [:]
         let motion = ctx.orientation == .vertical && movesAcrossContainers
@@ -101,6 +101,8 @@ extension NiriLayoutHandler {
                     ? ctx.monitor.frame
                     : nil
             )
+        } else if ctx.engine.windowsFillColumnHeight {
+            ctx.preparePredictedHeightAnimation(state: state, oldFrames: oldFrames)
         }
         return NiriStructuralMutation(
             operation: movesAcrossContainers
