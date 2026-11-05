@@ -142,7 +142,6 @@ struct MouseInputState {
     var liveEdgeScroll: LiveEdgeScroll?
     var liveEdgeZoneHold: LiveEdgeZoneHold?
     var deferredClickScroll: WindowToken?
-    var fusionDoubleClickHeights: [WindowToken: FusionDoubleClickHeight] = [:]
     var fusionDoubleClickWidths: [NodeId: FusionDoubleClickWidth] = [:]
     var liveDragLayoutStart: NiriLayoutChangeStart?
     var activeInteractionSource: InteractionSource?
