@@ -101,10 +101,6 @@ final class NiriSettings {
         didSet { onChange?() }
     }
 
-    var edgePeek = NiriSettings.defaults.edgePeek ?? false {
-        didSet { onChange?() }
-    }
-
     var edgePeekPercent = NiriSettings.defaults.edgePeekPercent ?? BuiltInSettingsDefaults.niriEdgePeekPercent {
         didSet {
             let validated = NiriSettings.validatedEdgePeekPercent(edgePeekPercent)
@@ -117,7 +113,7 @@ final class NiriSettings {
     }
 
     nonisolated static func validatedEdgePeekPercent(_ percent: Double) -> Double {
-        min(10, max(1, percent))
+        min(10, max(0, percent))
     }
 
     var monitorOverrides: [MonitorNiriSettings] = [] {
@@ -140,7 +136,6 @@ final class NiriSettings {
             overscrollVisibleStripPercent: overscrollVisibleStripPercent,
             macOSFusion: macOSFusion,
             macOSFusionModifier: macOSFusionModifier,
-            edgePeek: edgePeek,
             edgePeekPercent: edgePeekPercent
         )
     }
@@ -158,7 +153,6 @@ final class NiriSettings {
         moveWindowStacksIntoColumn = niri.moveWindowStacksIntoColumn ?? baseline.moveWindowStacksIntoColumn ?? true
         macOSFusion = niri.macOSFusion ?? baseline.macOSFusion ?? false
         macOSFusionModifier = niri.macOSFusionModifier ?? baseline.macOSFusionModifier ?? .option
-        edgePeek = niri.edgePeek ?? baseline.edgePeek ?? false
         edgePeekPercent = NiriSettings.validatedEdgePeekPercent(
             niri.edgePeekPercent ?? baseline.edgePeekPercent ?? BuiltInSettingsDefaults.niriEdgePeekPercent
         )
@@ -210,8 +204,9 @@ final class NiriSettings {
     }
 
     private func edgePeekShare(override: MonitorNiriSettings?) -> CGFloat? {
-        guard macOSFusion, override?.edgePeek ?? edgePeek else { return nil }
-        return CGFloat(override?.edgePeekPercent ?? edgePeekPercent) / 100
+        let percent = override?.edgePeekPercent ?? edgePeekPercent
+        guard macOSFusion, percent > 0 else { return nil }
+        return CGFloat(percent) / 100
     }
 
     nonisolated static let defaultContainerPrimarySpanPresets: [Double] = BuiltInSettingsDefaults
