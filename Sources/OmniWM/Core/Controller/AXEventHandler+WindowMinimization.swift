@@ -81,7 +81,11 @@ extension AXEventHandler {
                 _ = controller.cancelManagedFocusRequest(request)
             }
             controller.intentLedger.discardPendingFocus(token)
-            controller.layoutRefreshController.cancelActiveAnimations(for: entry.workspaceId)
+            let slideAlreadyPlanned = controller.settings.niri.macOSFusion
+                && controller.niriLayoutHandler.laidOutExclusions[entry.workspaceId]?.contains(token) == true
+            if !slideAlreadyPlanned {
+                controller.layoutRefreshController.cancelActiveAnimations(for: entry.workspaceId)
+            }
         }
         if entry.axRef != nil { controller.axManager.setWindowNativeSuppressed(suppressed, token: token) }
         controller.mouseEventHandler.handleAppVisibilityChanged()
