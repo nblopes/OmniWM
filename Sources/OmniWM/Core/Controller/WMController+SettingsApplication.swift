@@ -25,7 +25,7 @@ extension WMController {
 
         applyPersistedLayoutSettings(settings)
         mouseEventHandler.syncFusionDragTapFilter()
-        setTabRailAppIcons(settings.tabRailAppIcons, persist: false)
+        setTabRailStyle(settings.tabRailStyle, persist: false)
 
         updateWorkspaceConfig()
         updateMonitorOrientations()
@@ -79,15 +79,15 @@ extension WMController {
     }
 
     var tabRailStyle: TabRailStyle {
-        TabRailStyle(appIcons: settings.tabRailAppIcons)
+        settings.tabRailStyle
     }
 
-    func setTabRailAppIcons(_ enabled: Bool, persist: Bool = true) {
-        if persist, settings.tabRailAppIcons != enabled {
-            settings.tabRailAppIcons = enabled
+    func setTabRailStyle(_ style: TabRailStyle, persist: Bool = true) {
+        if persist, settings.tabRailStyle != style {
+            settings.tabRailStyle = style
         }
 
-        let width = TabRailStyle(appIcons: enabled).reservedWidth
+        let width = style.reservedWidth
         workspaceManager.withEngineMutationScope {
             niriEngine?.updateTabIndicatorWidth(width, motion: motionPolicy.snapshot())
             dwindleEngine?.tabRailWidth = width

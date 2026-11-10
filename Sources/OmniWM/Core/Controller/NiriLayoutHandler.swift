@@ -48,6 +48,19 @@ enum StructuralMutationOutcome: Equatable {
 
 @MainActor final class NiriLayoutHandler {
     weak var controller: WMController?
+    var liveWindowFramesProvider: @MainActor ([WindowState]) -> [WindowToken: CGRect] = { entries in
+        NiriLayoutHandler.liveWindowFrames(of: entries)
+    }
+
+    lazy var windowIsBeingMovedProvider: @MainActor (WindowToken, Bool) -> Bool = { [weak self] token, counts in
+        NiriLayoutHandler.isBeingMoved(
+            self?.controller?.mouseEventHandler.state.nativeTitleBarDrag,
+            token: token,
+            countsCurrentFrameChange: counts
+        )
+    }
+
+    var sidewaysColumnFrames: [NodeId: CGRect] = [:]
 
     struct NiriLayoutPass {
         let motion: MotionSnapshot

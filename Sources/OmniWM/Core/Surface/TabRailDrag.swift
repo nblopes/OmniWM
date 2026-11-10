@@ -10,6 +10,7 @@ struct TabRailDrag {
     let token: WindowToken?
     let location: CGPoint
     let pressLocation: CGPoint
+    var tabTop: CGFloat?
 }
 
 struct TabRailDragGesture {

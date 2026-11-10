@@ -45,7 +45,7 @@ extension SettingsStore {
             clipboard: clipboard.export(),
             quakeTerminal: quakeTerminal.export(),
             appearanceMode: appearanceMode,
-            tabRailAppIcons: tabRailAppIcons,
+            tabRailStyle: tabRailStyle,
             shellPermissions: shellPermissions.export()
         )
     }

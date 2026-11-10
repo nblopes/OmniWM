@@ -10,10 +10,13 @@ extension NiriLayoutHandler {
         guard let controller, let engine = controller.niriEngine else { return [] }
 
         var infos: [TabRailInfo] = []
+        var shownColumns = Set<NodeId>()
+        defer { pruneSidewaysColumnFrames(keeping: shownColumns) }
         for monitor in controller.workspaceManager.monitors {
             guard let workspace = controller.workspaceManager.activeWorkspaceOrFirst(on: monitor.id),
                   controller.workspaceManager.activeLayoutKind(for: workspace.id) == .niri
             else { continue }
+            shownColumns.formUnion(engine.columns(in: workspace.id).map(\.id))
 
             infos.append(contentsOf: niriTabRailInfos(
                 engine: engine,
@@ -31,10 +34,20 @@ extension NiriLayoutHandler {
     ) -> [TabRailGeometryCommand] {
         var commands: [TabRailGeometryCommand] = []
         let columns = engine.columns(in: workspaceId)
+        let liveFrames = sidewaysLiveFramesForAnimation(
+            engine: engine, columns: columns, workspaceId: workspaceId, visibleFrame: monitor.visibleFrame
+        )
         let columnSpan = columns.span
         for index in columnSpan.indices where columnSpan[index].isTabbed {
             let column = columnSpan[index]
             guard !engine.isLiveDraggedColumn(column) else {
+                if let followed = sidewaysRailCommand(
+                    engine: engine, column: column, workspaceId: workspaceId, visibleFrame: monitor.visibleFrame,
+                    motion: .animating(liveFrames), followsDrift: monitor.orientation != .vertical
+                ) {
+                    commands.append(followed)
+                    continue
+                }
                 commands.append(TabRailGeometryCommand(
                     key: TabRailKey(workspaceId: workspaceId, owner: .niriColumn(column.id)),
                     tileFrame: .zero,
@@ -46,9 +59,17 @@ extension NiriLayoutHandler {
                 ? engine.projectedActiveWindow(in: column, workspaceId: workspaceId).flatMap {
                     controller?.niriEdgePictures.presentation(for: $0.token)
                 } : nil
-            commands.append(tabRailGeometry(
+            let sideways = picture == nil
+                ? sidewaysRailCommand(
+                    engine: engine, column: column, workspaceId: workspaceId, visibleFrame: monitor.visibleFrame,
+                    motion: .animating(liveFrames), followsDrift: monitor.orientation != .vertical
+                ) : nil
+            commands.append(sideways ?? tabRailGeometry(
                 column: column, workspaceId: workspaceId, visibleFrame: monitor.visibleFrame, picture: picture
             ))
+        }
+        if let pulled = sidewaysPulledTabCommand(engine: engine, workspaceId: workspaceId) {
+            commands.append(pulled)
         }
         return commands
     }
@@ -60,8 +81,22 @@ extension NiriLayoutHandler {
     ) -> [TabRailInfo] {
         guard let controller else { return [] }
         var infos: [TabRailInfo] = []
-        for column in engine.columns(in: workspaceId) where column.isTabbed && !engine.isLiveDraggedColumn(column) {
-            let windows = engine.projectedWindows(in: column, workspaceId: workspaceId)
+        let pulledTab = controller.tabRailStyle == .sidewaysTabs
+            ? sidewaysPulledTab(engine: engine, workspaceId: workspaceId) : nil
+        if let pulledInfo = sidewaysPulledTabInfo(engine: engine, workspaceId: workspaceId) {
+            infos.append(pulledInfo)
+        }
+        for column in engine.columns(in: workspaceId) where column.isTabbed {
+            let isDraggedWhole = engine.isLiveDraggedColumn(column)
+            let draggedFollowed = isDraggedWhole
+                ? sidewaysRailCommand(
+                    engine: engine, column: column, workspaceId: workspaceId, visibleFrame: monitor.visibleFrame,
+                    motion: .resting, followsDrift: false
+                ) : nil
+            guard !isDraggedWhole || draggedFollowed != nil else { continue }
+            let windows = engine.projectedWindows(in: column, workspaceId: workspaceId).filter { window in
+                pulledTab?.token != window.token
+            }
             guard windows.count > 1 else { continue }
 
             guard let activeWindow = engine.projectedActiveWindow(
@@ -76,11 +111,17 @@ extension NiriLayoutHandler {
                 activeVisualIndex: activeVisualIndex,
                 controller: controller
             ).map { tab in
-                tab.token.map { engine.isLiveDraggedWindow($0, in: workspaceId) } == true ? Self.blankTab(tab) : tab
+                !isDraggedWhole && tab.token.map { engine.isLiveDraggedWindow($0, in: workspaceId) } == true
+                    ? Self.blankTab(tab) : tab
             }
             let picture = engine.monitor(for: monitor.id)?.orientation == .vertical
                 ? controller.niriEdgePictures.presentation(for: activeWindow.token) : nil
-            let geometry = tabRailGeometry(
+            let followed = draggedFollowed ?? (picture == nil
+                ? sidewaysRailCommand(
+                    engine: engine, column: column, workspaceId: workspaceId, visibleFrame: monitor.visibleFrame,
+                    motion: .resting, followsDrift: false
+                ) : nil)
+            let geometry = followed ?? tabRailGeometry(
                 column: column, workspaceId: workspaceId, visibleFrame: monitor.visibleFrame, picture: picture,
                 nativeFrame: column.renderedFrame ?? column.frame
             )
@@ -134,7 +175,7 @@ extension NiriLayoutHandler {
         )
     }
 
-    private func tabbedColumnTabs(
+    func tabbedColumnTabs(
         windows: [NiriWindow],
         activeVisualIndex: Int,
         controller: WMController

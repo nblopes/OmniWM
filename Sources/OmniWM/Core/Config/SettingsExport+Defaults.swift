@@ -50,7 +50,7 @@ extension SettingsExport {
             clipboard: Clipboard.defaults(),
             quakeTerminal: QuakeTerminal.defaults(),
             appearanceMode: .dark,
-            tabRailAppIcons: false
+            tabRailStyle: .compact
         )
     }
 }

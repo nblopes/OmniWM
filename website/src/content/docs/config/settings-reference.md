@@ -544,14 +544,15 @@ Appearance of OmniWM's own UI.
 | Key | Type | Default | Description |
 | --- | --- | --- | --- |
 | `mode` | string | `"dark"` | `automatic`, `light`, or `dark`. |
-| `tabRailAppIcons` *(optional)* | boolean | `false` | Replaces compact tab markers with app icons in Niri and Dwindle. Each tab group reserves a 28-point rail instead of 10 points; crowded rails scroll vertically. |
+| `tabRailStyle` *(optional)* | string | `"compact"` | How tab rails look in Niri and Dwindle. `compact` shows small markers in a 10-point rail. `appIcons` shows app icons in a 28-point rail. `sidewaysTabs` shows tabs turned on their side, each with its app's icon and name and coloured from the icon, in a 40-point strip that sits just under the window's left edge. Crowded rails scroll vertically. |
+| `tabRailAppIcons` *(optional)* | boolean | `false` | Older form of `tabRailStyle`: `true` means `appIcons`. Used only when `tabRailStyle` is missing. OmniWM writes both keys, so older versions keep reading the file. |
 
-The **Show app icons in tab rails** toggle in **Settings → Appearance → App & Motion** controls the same option. Changes apply live without restarting.
+The **Tab rail style** picker in **Settings → Appearance → App & Motion** controls the same option. Changes apply live without restarting.
 
 ```toml
 [appearance]
 mode = "dark"
-tabRailAppIcons = true
+tabRailStyle = "sidewaysTabs"
 ```
 
 ## hotkeys

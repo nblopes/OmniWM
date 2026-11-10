@@ -6856,6 +6856,130 @@
         }
       }
     },
+    "Click a tab to select its window. Scroll to see more tabs." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "タブをクリックしてウィンドウを選択します。さらにタブを見るにはスクロールします。"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klicken Sie auf einen Tab, um sein Fenster auszuwählen. Scrollen Sie, um weitere Registerkarten anzuzeigen."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klikk på en fane for å velge vinduet. Rull for å se flere faner."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klicka på en flik för att välja dess fönster. Rulla för att se fler flikar."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Haz clic en una pestaña para seleccionar su ventana. Desplázate para ver más pestañas."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击标签页以选择其窗口。滚动查看更多标签页。"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "उसकी विंडो चुनने के लिए किसी टैब पर क्लिक करें। अधिक टैब देखने के लिए स्क्रॉल करें।"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انقر على علامة تبويب لتحديد نافذتها. قم بالتمرير لرؤية المزيد من علامات التبويب."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kliknite na karticu da biste izabrali njen prozor. Pomerajte da biste videli još kartica."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Κάντε κλικ σε μια καρτέλα για να επιλέξετε το παράθυρό της. Κάντε κύλιση για να δείτε περισσότερες καρτέλες."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "לחץ על לשונית כדי לבחור את החלון שלה. גלול כדי לראות עוד כרטיסיות."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нажмите на вкладку, чтобы выбрать её окно. Прокрутите, чтобы увидеть больше вкладок."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kliknij kartę, aby wybrać jej okno. Przewiń, aby zobaczyć więcej kart."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Натисніть вкладку, щоб вибрати її вікно. Прокрутіть, щоб побачити більше вкладок."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cliquez sur un onglet pour sélectionner sa fenêtre. Faites défiler pour voir plus d'onglets."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klik op een tabblad om het venster te selecteren. Scroll om meer tabbladen te zien."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fare clic su una scheda per selezionare la sua finestra. Scorri per vedere altre schede."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klikkaa välilehteä valitaksesi sen ikkunan. Vieritä nähdäksesi lisää välilehtiä."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klik på en fane for at vælge dens vindue. Rul for at se flere faneblade."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "탭을 클릭하여 창을 선택합니다. 더 많은 탭을 보려면 스크롤하세요."
+          }
+        }
+      }
+    },
     "Press to open or close Overview. Buttons assigned to System Hyper or a hotkey are unavailable." : {
       "localizations" : {
         "ar" : {
@@ -23117,6 +23241,130 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "앱이 숨겨졌습니다, 워크스페이스 %@"
+          }
+        }
+      }
+    },
+    "App icons" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アプリアイコン"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App-Symbole"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App-ikoner"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appikoner"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iconos de aplicaciones"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "应用程序图标"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ऐप आइकन"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أيقونات التطبيقات"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikone aplikacija"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Εικονίδια εφαρμογών"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "סמלי אפליקציות"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Значки приложений"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikony aplikacji"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Піктограми програм"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Icônes d'applications"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apppictogrammen"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Icone delle app"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sovelluskuvakkeet"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appikoner"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "앱 아이콘"
           }
         }
       }
@@ -114008,6 +114256,7 @@
       }
     },
     "Replaces compact markers with app icons. Applies to Niri and Dwindle." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
@@ -129916,6 +130165,7 @@
       }
     },
     "Show app icons in tab rails" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
@@ -138852,6 +139102,130 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%2$lld 중 %1$lld 탭이 선택되었습니다"
+          }
+        }
+      }
+    },
+    "Tab rail style" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "タブレールのスタイル"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stil der Tab-Leiste"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stil for fanebånd"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stil för flikfält"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estilo de la barra de pestañas"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "标签栏样式"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "टैब रेल शैली"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نمط شريط التبويب"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stil trake kartica"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Στυλ ράγας καρτελών"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "סגנון מסילת לשוניות"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Стиль панели вкладок"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Styl pasa kart"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Стиль панелі вкладок"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Style du rail d'onglets"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stijl van tab-rail"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stile della guida delle schede"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Välilehtikiskon tyyli"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stil for fanebjælke"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "탭 레일 스타일"
           }
         }
       }
@@ -152163,6 +152537,130 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "창"
+          }
+        }
+      }
+    },
+    "Window %lld" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ウィンドウ %lld"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fenster %lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vindu %lld"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fönster %lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ventana %lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "窗口 %lld"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "विंडो %lld"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "النافذة %lld"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prozor %lld"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Παράθυρο %lld"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "חלון %lld"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Окно %lld"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Okno %lld"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вікно %lld"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fenêtre %lld"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venster %lld"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finestra %lld"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikkuna %lld"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vindue %lld"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "창 %lld"
           }
         }
       }
@@ -168597,6 +169095,130 @@
     "Compact" : {
 
     },
+    "Compact markers, app icons, or tabs with app names along the column's edge. Applies to Niri and Dwindle." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コンパクトなマーカー、アプリアイコン、または列の端に沿ってアプリ名を表示するタブ。Niri と Dwindle に適用されます。"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kompakte Markierungen, App-Symbole oder Tabs mit App-Namen am Rand der Spalte. Gilt für Niri und Dwindle."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kompakte markører, app-ikoner eller faner med appnavn langs kolonnens kant. Gjelder for Niri og Dwindle."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kompakta markörer, appikoner eller flikar med appnamn längs kolumnens kant. Gäller för Niri och Dwindle."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcadores compactos, iconos de aplicaciones o pestañas con nombres de aplicaciones a lo largo del borde de la columna. Se aplica a Niri y Dwindle."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "紧凑标记、应用程序图标，或沿列边缘显示应用名称的标签页。适用于 Niri 和 Dwindle。"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "कॉम्पैक्ट मार्कर, ऐप आइकन, या कॉलम के किनारे पर ऐप नामों वाले टैब। Niri और Dwindle पर लागू होता है।"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "علامات مدمجة أو أيقونات التطبيقات أو علامات تبويب بأسماء التطبيقات على حافة العمود. ينطبق على Niri وDwindle."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kompaktne oznake, ikone aplikacija ili kartice sa nazivima aplikacija duž ivice kolone. Primenjuje se na Niri i Dwindle."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Συμπαγείς δείκτες, εικονίδια εφαρμογών ή καρτέλες με ονόματα εφαρμογών κατά μήκος της άκρης της στήλης. Ισχύει για Niri και Dwindle."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "סמנים דחוסים, סמלי אפליקציות או לשוניות עם שמות אפליקציות לאורך קצה העמודה. חל על Niri ו-Dwindle."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Компактные метки, значки приложений или вкладки с названиями приложений вдоль края колонки. Применяется к Niri и Dwindle."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kompaktowe znaczniki, ikony aplikacji lub karty z nazwami aplikacji wzdłuż krawędzi kolumny. Dotyczy Niri i Dwindle."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Компактні позначки, піктограми програм або вкладки з назвами програм уздовж краю колонки. Застосовується до Niri та Dwindle."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marqueurs compacts, icônes d'applications ou onglets portant le nom des applications le long du bord de la colonne. S'applique à Niri et Dwindle."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compacte markeringen, apppictogrammen of tabbladen met appnamen langs de rand van de kolom. Geldt voor Niri en Dwindle."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indicatori compatti, icone delle app o schede con i nomi delle app lungo il bordo della colonna. Si applica a Niri e Dwindle."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiiviit merkit, sovelluskuvakkeet tai välilehdet sovellusten nimillä sarakkeen reunassa. Koskee Niriä ja Dwindleä."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kompakte markører, appikoner eller faner med appnavne langs kolonnens kant. Gælder for Niri og Dwindle."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "간결한 표시, 앱 아이콘 또는 열 가장자리를 따라 앱 이름이 있는 탭. Niri와 Dwindle에 적용됩니다."
+          }
+        }
+      }
+    },
     "Component Regions" : {
 
     },
@@ -168980,6 +169602,130 @@
     },
     "Side" : {
 
+    },
+    "Sideways tabs" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "横向きのタブ"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seitliche Tabs"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sidelengs faner"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sidledes flikar"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pestañas laterales"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "侧向标签页"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "बगल वाले टैब"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "علامات تبويب جانبية"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bočne kartice"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Πλάγιες καρτέλες"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "לשוניות צדדיות"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Боковые вкладки"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karty boczne"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бічні вкладки"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Onglets latéraux"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zijwaartse tabbladen"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schede laterali"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sivuttaiset välilehdet"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sidelæns faner"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "옆으로 놓인 탭"
+          }
+        }
+      }
     },
     "Spacing" : {
 

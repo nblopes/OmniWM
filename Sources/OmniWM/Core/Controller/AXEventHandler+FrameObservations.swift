@@ -110,6 +110,11 @@ extension AXEventHandler {
         {
             controller.surfaceReconciler.noteBorderChanged()
         }
+        if entry.mode == .tiling {
+            controller.niriLayoutHandler.followSidewaysRails(
+                movedWindow: entry.token, frame: ScreenCoordinateSpace.toAppKit(rect: windowInfo.frame)
+            )
+        }
         if entry.mode == .tiling,
            controller.mouseEventHandler.handleNativeTitleBarDragFrameChanged(for: entry)
         {

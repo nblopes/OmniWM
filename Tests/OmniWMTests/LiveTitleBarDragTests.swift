@@ -2071,6 +2071,294 @@ final class LiveTitleBarDragTests: NiriInteractionTestCase {
         XCTAssertEqual(Set(railOwners(fixture)), [.niriColumn(dragged.id), .niriColumn(other.id)])
     }
 
+    private static func frames(_ frame: CGRect?, for entries: [WindowState]) -> [WindowToken: CGRect] {
+        guard let frame else { return [:] }
+        return entries.reduce(into: [:]) { $0[$1.token] = frame }
+    }
+
+    func testSidewaysTabsFollowTheDraggedTabbedColumnsWindowInsteadOfHiding() throws {
+        let fixture = try makeFixture(pid: 938_400, windowCount: 6, tabbedRuns: [0 ... 2, 4 ... 5])
+        fixture.controller.settings.tabRailStyle = .sidewaysTabs
+        let dragged = try column(holding: fixture.tokens[1], in: fixture)
+        var live = CGRect(x: 500, y: 200, width: 400, height: 600)
+        fixture.controller.niriLayoutHandler.liveWindowFramesProvider = { Self.frames(live, for: $0) }
+        let reserved = TabRailStyle.sidewaysTabs.reservedWidth
+        func expected() -> CGRect {
+            CGRect(x: live.minX - reserved, y: live.minY, width: live.width + reserved, height: live.height)
+        }
+
+        try fixture.startLiveDrag(fixture.tokens[1])
+        _ = try fixture.frames()
+
+        XCTAssertEqual(try railCommand(for: dragged, in: fixture).tileFrame, expected())
+        let info = try XCTUnwrap(
+            fixture.controller.niriLayoutHandler.desiredTabRailInfos().first { $0.owner == .niriColumn(dragged.id) }
+        )
+        XCTAssertEqual(info.tileFrame, expected())
+        XCTAssertTrue(info.tabs.allSatisfy { $0.token != nil })
+
+        live = live.offsetBy(dx: 120, dy: -40)
+        XCTAssertEqual(try railCommand(for: dragged, in: fixture).tileFrame, expected())
+
+        fixture.controller.settings.tabRailStyle = .appIcons
+        XCTAssertEqual(try railCommand(for: dragged, in: fixture).visibleTileFrame, .null)
+        XCTAssertFalse(railOwners(fixture).contains(.niriColumn(dragged.id)))
+    }
+
+    func testSidewaysTabsFollowTheWindowOnlyWhileItIsBeingMovedOrResized() throws {
+        let fixture = try makeFixture(pid: 938_401, windowCount: 6, tabbedRuns: [0 ... 2, 4 ... 5])
+        fixture.controller.settings.tabRailStyle = .sidewaysTabs
+        let tabbed = try column(holding: fixture.tokens[1], in: fixture)
+        let columnFrame = try sidewaysAnchor(for: tabbed, in: fixture)
+        let reserved = TabRailStyle.sidewaysTabs.reservedWidth
+        let window = CGRect(
+            x: columnFrame.minX + reserved, y: columnFrame.minY + 80,
+            width: columnFrame.width - reserved, height: columnFrame.height - 200
+        )
+        final class Live {
+            var frame: CGRect?
+            var moving = false
+        }
+        let live = Live()
+        live.frame = window
+        fixture.controller.niriLayoutHandler.liveWindowFramesProvider = { Self.frames(live.frame, for: $0) }
+        fixture.controller.niriLayoutHandler.windowIsBeingMovedProvider = { _, _ in live.moving }
+
+        XCTAssertEqual(try railCommand(for: tabbed, in: fixture).tileFrame, columnFrame)
+
+        live.moving = true
+        let followed = try railCommand(for: tabbed, in: fixture)
+        let followedTile = CGRect(
+            x: window.minX - reserved, y: window.minY, width: window.width + reserved, height: window.height
+        )
+        XCTAssertEqual(followed.tileFrame, followedTile)
+        XCTAssertEqual(followed.visibleTileFrame, followedTile)
+        let info = try XCTUnwrap(
+            fixture.controller.niriLayoutHandler.desiredTabRailInfos().first { $0.owner == .niriColumn(tabbed.id) }
+        )
+        XCTAssertEqual(info.tileFrame, followed.tileFrame)
+
+        live.moving = true
+        live.frame = nil
+        XCTAssertEqual(try railCommand(for: tabbed, in: fixture).tileFrame, columnFrame)
+
+        live.frame = window
+        fixture.controller.settings.tabRailStyle = .compact
+        XCTAssertEqual(try railCommand(for: tabbed, in: fixture).tileFrame, tabbed.renderedFrame)
+    }
+
+    func testSidewaysTabsFollowAGrowingWindowsPlannedFrameWithoutReads() throws {
+        let fixture = try makeFixture(pid: 938_409, windowCount: 6, tabbedRuns: [0 ... 2, 4 ... 5])
+        fixture.controller.settings.tabRailStyle = .sidewaysTabs
+        let tabbed = try column(holding: fixture.tokens[1], in: fixture)
+        let columnFrame = try XCTUnwrap(tabbed.renderedFrame)
+        let active = try XCTUnwrap(fixture.engine.projectedActiveWindow(in: tabbed, workspaceId: fixture.workspaceId))
+        let planned = try XCTUnwrap(active.renderedFrame)
+        final class Reads {
+            var count = 0
+        }
+        let reads = Reads()
+        let handler = fixture.controller.niriLayoutHandler
+        handler.liveWindowFramesProvider = { entries in
+            reads.count += 1
+            return Self.frames(CGRect(x: 1200, y: 300, width: 500, height: 400), for: entries)
+        }
+        handler.windowIsBeingMovedProvider = { _, _ in false }
+        defer {
+            active.renderedFrame = planned
+            active.stopMoveAnimations()
+        }
+
+        active.animateHeightFrom(delta: -1000, clock: nil, animated: true)
+        let growing = CGRect(x: planned.minX, y: planned.maxY - 640, width: planned.width, height: 640)
+        active.renderedFrame = growing
+
+        let tile = try railCommand(for: tabbed, in: fixture).tileFrame
+        XCTAssertEqual(tile, CGRect(x: columnFrame.minX, y: growing.minY, width: columnFrame.width, height: 640))
+        XCTAssertEqual(reads.count, 0)
+        let info = try XCTUnwrap(handler.desiredTabRailInfos().first { $0.owner == .niriColumn(tabbed.id) })
+        XCTAssertEqual(info.tileFrame, tile)
+        XCTAssertEqual(reads.count, 0)
+    }
+
+    private func sidewaysAnchor(for column: NiriContainer, in fixture: Fixture) throws -> CGRect {
+        let columnFrame = try XCTUnwrap(column.renderedFrame)
+        guard let window = fixture.engine.projectedActiveWindow(in: column, workspaceId: fixture.workspaceId)?
+            .renderedFrame
+        else { return columnFrame }
+        return CGRect(x: columnFrame.minX, y: window.minY, width: columnFrame.width, height: window.height)
+    }
+
+    func testTheStripKeepsTheSameDistanceFromItsWindowsTopAtRestAndWhileFollowing() throws {
+        let fixture = try makeFixture(pid: 938_410, windowCount: 6, tabbedRuns: [0 ... 2, 4 ... 5])
+        fixture.controller.settings.tabRailStyle = .sidewaysTabs
+        let tabbed = try column(holding: fixture.tokens[1], in: fixture)
+        let columnFrame = try XCTUnwrap(tabbed.renderedFrame)
+        let planned = try XCTUnwrap(
+            fixture.engine.projectedActiveWindow(in: tabbed, workspaceId: fixture.workspaceId)?.renderedFrame
+        )
+        XCTAssertLessThan(planned.maxY, columnFrame.maxY)
+        final class Live {
+            var moving = false
+        }
+        let live = Live()
+        let reserved = TabRailStyle.sidewaysTabs.reservedWidth
+        let actual = CGRect(
+            x: columnFrame.minX + reserved, y: planned.minY,
+            width: columnFrame.width - reserved, height: planned.height
+        )
+        let handler = fixture.controller.niriLayoutHandler
+        handler.liveWindowFramesProvider = { Self.frames(actual, for: $0) }
+        handler.windowIsBeingMovedProvider = { _, _ in live.moving }
+        func strip() throws -> CGRect {
+            let command = try railCommand(for: tabbed, in: fixture)
+            return TabRailPlacement.frame(
+                for: command.visibleTileFrame, tabCount: 3, style: .sidewaysTabs, tileFrame: command.tileFrame
+            )
+        }
+
+        let resting = try strip()
+        XCTAssertEqual(resting.maxY, planned.maxY - SidewaysTabMetrics.windowCornerAllowance)
+        XCTAssertEqual(resting.minX, columnFrame.minX)
+
+        live.moving = true
+        XCTAssertEqual(try strip(), resting)
+    }
+
+    func testOnlyAWindowWhoseFrameReallyChangedCountsAsBeingMoved() throws {
+        let token = WindowToken(pid: 938_404, windowId: 1)
+        var drag = MouseInputState.NativeTitleBarDrag(token: token)
+        func moving(_ counts: Bool, _ other: WindowToken? = nil) -> Bool {
+            NiriLayoutHandler.isBeingMoved(drag, token: other ?? token, countsCurrentFrameChange: counts)
+        }
+
+        XCTAssertFalse(NiriLayoutHandler.isBeingMoved(nil, token: token, countsCurrentFrameChange: true))
+        XCTAssertFalse(moving(true))
+        drag.phase = .dragging
+        XCTAssertFalse(moving(false))
+        XCTAssertTrue(moving(true))
+        XCTAssertFalse(moving(true, WindowToken(pid: 938_404, windowId: 2)))
+        drag.receivedFrameChange = true
+        XCTAssertTrue(moving(false))
+    }
+
+    func testAMaximizedTabHidesItsSidewaysStrip() throws {
+        let fixture = try makeFixture(pid: 938_405, windowCount: 6, tabbedRuns: [0 ... 2, 4 ... 5])
+        fixture.controller.settings.tabRailStyle = .sidewaysTabs
+        let tabbed = try column(holding: fixture.tokens[1], in: fixture)
+        let active = try XCTUnwrap(fixture.engine.projectedActiveWindow(in: tabbed, workspaceId: fixture.workspaceId))
+        XCTAssertNotEqual(try railCommand(for: tabbed, in: fixture).visibleTileFrame, .null)
+
+        active.sizingMode = .maximized
+        defer { active.sizingMode = .normal }
+
+        XCTAssertEqual(try railCommand(for: tabbed, in: fixture).visibleTileFrame, .null)
+    }
+
+    func testSidewaysTabsCorrectOnlyTheWindowsLagDuringAnimationSteps() throws {
+        let fixture = try makeFixture(pid: 938_402, windowCount: 6, tabbedRuns: [0 ... 2, 4 ... 5])
+        fixture.controller.settings.tabRailStyle = .sidewaysTabs
+        let tabbed = try column(holding: fixture.tokens[1], in: fixture)
+        let columnFrame = try sidewaysAnchor(for: tabbed, in: fixture)
+        let token = try XCTUnwrap(fixture.engine.projectedActiveWindow(in: tabbed, workspaceId: fixture.workspaceId)?
+            .token)
+        let reserved = TabRailStyle.sidewaysTabs.reservedWidth
+        let resting = CGRect(
+            x: columnFrame.minX + reserved, y: columnFrame.minY + 12,
+            width: columnFrame.width - reserved, height: columnFrame.height - 24
+        )
+        let handler = fixture.controller.niriLayoutHandler
+        final class Reads {
+            var count = 0
+        }
+        let reads = Reads()
+        handler.liveWindowFramesProvider = { entries in
+            reads.count += entries.count
+            return Self.frames(resting, for: entries)
+        }
+        handler.windowIsBeingMovedProvider = { _, _ in false }
+        let visible = fixture.monitor.visibleFrame
+        func command(_ motion: NiriLayoutHandler.SidewaysRailMotion) throws -> TabRailGeometryCommand {
+            try XCTUnwrap(handler.sidewaysRailCommand(
+                engine: fixture.engine, column: tabbed, workspaceId: fixture.workspaceId, visibleFrame: visible,
+                motion: motion, followsDrift: true
+            ))
+        }
+
+        XCTAssertEqual(try command(.resting).tileFrame, columnFrame)
+        XCTAssertEqual(
+            try command(.animating([token: resting.offsetBy(dx: -120, dy: 0)])).tileFrame,
+            columnFrame.offsetBy(dx: -120, dy: 0)
+        )
+
+        handler.sidewaysColumnFrames[tabbed.id] = columnFrame.offsetBy(dx: 30, dy: 0)
+        XCTAssertEqual(try command(.animating([token: resting.offsetBy(dx: 30, dy: 0)])).tileFrame, columnFrame)
+
+        for frame in [resting.offsetBy(dx: 1, dy: 0), resting.offsetBy(dx: columnFrame.width + 3000, dy: 0)] {
+            XCTAssertEqual(try command(.animating([token: frame])).tileFrame, columnFrame)
+        }
+        XCTAssertEqual(try command(.animating([:])).tileFrame, columnFrame)
+        XCTAssertEqual(
+            try command(.windowMoved(token, resting.offsetBy(dx: -50, dy: 0))).tileFrame,
+            columnFrame.offsetBy(dx: -50, dy: 0)
+        )
+        XCTAssertEqual(reads.count, 0)
+
+        let columns = fixture.engine.columns(in: fixture.workspaceId)
+        for column in columns {
+            handler.sidewaysColumnFrames[column.id] = try sidewaysAnchor(for: column, in: fixture)
+        }
+        XCTAssertTrue(handler.sidewaysLiveFramesForAnimation(
+            engine: fixture.engine, columns: columns, workspaceId: fixture.workspaceId, visibleFrame: visible
+        ).isEmpty)
+        XCTAssertEqual(reads.count, 0)
+
+        handler.sidewaysColumnFrames[tabbed.id] = columnFrame.offsetBy(dx: 30, dy: 0)
+        let frames = handler.sidewaysLiveFramesForAnimation(
+            engine: fixture.engine, columns: columns, workspaceId: fixture.workspaceId, visibleFrame: visible
+        )
+        XCTAssertEqual(Array(frames.keys), [token])
+        XCTAssertEqual(reads.count, 1)
+    }
+
+    func testAFrameChangeMovesTheRailWindowWithItsWindowAndBackAtRest() throws {
+        let fixture = try makeFixture(pid: 938_403, windowCount: 6, tabbedRuns: [0 ... 2, 4 ... 5])
+        let controller = fixture.controller
+        controller.settings.tabRailStyle = .sidewaysTabs
+        defer { controller.tabRailManager.removeAll() }
+        let tabbed = try column(holding: fixture.tokens[1], in: fixture)
+        let columnFrame = try XCTUnwrap(tabbed.renderedFrame)
+        let token = try XCTUnwrap(fixture.engine.projectedActiveWindow(in: tabbed, workspaceId: fixture.workspaceId)?
+            .token)
+        let reserved = TabRailStyle.sidewaysTabs.reservedWidth
+        let resting = CGRect(
+            x: columnFrame.minX + reserved, y: columnFrame.minY,
+            width: columnFrame.width - reserved, height: columnFrame.height
+        )
+        controller.niriLayoutHandler.liveWindowFramesProvider = { _ in
+            XCTFail("A frame change already carries its frame")
+            return [:]
+        }
+        controller.niriLayoutHandler.windowIsBeingMovedProvider = { _, _ in false }
+        let infos = controller.niriLayoutHandler.desiredTabRailInfos()
+        controller.tabRailManager.updateRails(infos, style: .sidewaysTabs)
+        let key = TabRailKey(workspaceId: fixture.workspaceId, owner: .niriColumn(tabbed.id))
+        let rail = try XCTUnwrap(controller.tabRailManager.existingWindow(for: key) as? TabRailWindow)
+        XCTAssertEqual(rail.appliedFrame.minX, columnFrame.minX)
+        XCTAssertEqual(rail.appliedFrame.width, reserved + SidewaysTabMetrics.tuckUnderWindow)
+
+        controller.niriLayoutHandler.followSidewaysRails(movedWindow: token, frame: resting.offsetBy(dx: -150, dy: 0))
+        XCTAssertEqual(rail.appliedFrame.minX, columnFrame.minX - 150)
+        XCTAssertEqual(rail.appliedFrame.width, reserved + SidewaysTabMetrics.tuckUnderWindow)
+
+        controller.tabRailManager.updateRails(infos, forceOrdering: true, style: .sidewaysTabs)
+        XCTAssertEqual(rail.appliedFrame.minX, columnFrame.minX - 150)
+
+        controller.niriLayoutHandler.followSidewaysRails(movedWindow: token, frame: resting)
+        XCTAssertEqual(rail.appliedFrame.minX, columnFrame.minX)
+        XCTAssertEqual(rail.appliedFrame.width, reserved + SidewaysTabMetrics.tuckUnderWindow)
+    }
+
     func testAnEdgeScrollWithATabbedColumnMovesTheDropSpaceOnceEachUntilTheStripEnd() throws {
         let fixture = try makeFixture(pid: 938_062, windowCount: 8, tabbedRuns: [1 ... 3])
         let dragged = try column(holding: fixture.tokens[2], in: fixture)
@@ -2434,6 +2722,75 @@ final class LiveTitleBarDragTests: NiriInteractionTestCase {
         clock.now += 0.4
         fixture.handler.startLiveEdgeScrollIfDue()
         XCTAssertFalse(fixture.handler.isLiveEdgeScrolling)
+    }
+
+    func testAPulledTabTravelsWithItsWindowInSidewaysTabs() throws {
+        let fixture = try makeFixture(pid: 938_407, windowCount: 6, tabbedRuns: [1 ... 3])
+        fixture.controller.settings.tabRailStyle = .sidewaysTabs
+        let pulled = fixture.tokens[2]
+        let tabbed = try column(holding: pulled, in: fixture)
+        let rail = try railInfo(holding: pulled, in: fixture)
+        let start = try fixture.frame(pulled)
+        fixture.handler.nativeWindowFrameProvider = { _ in start }
+        let handler = fixture.controller.niriLayoutHandler
+        handler.liveWindowFramesProvider = { _ in
+            XCTFail("A pulled tab is placed from the drag's own frame")
+            return [:]
+        }
+        let press = CGPoint(x: start.minX - 10, y: start.midY)
+        let pulledNode = try XCTUnwrap(fixture.engine.findNode(for: pulled, in: fixture.workspaceId))
+        let reserved = TabRailStyle.sidewaysTabs.reservedWidth
+        func travelling() -> TabRailInfo? {
+            handler.desiredTabRailInfos().first { $0.owner == .niriColumn(pulledNode.id) }
+        }
+        func tile(_ frame: CGRect) -> CGRect {
+            CGRect(x: frame.minX - reserved, y: frame.minY, width: frame.width + reserved, height: frame.height)
+        }
+
+        tabPull(pulled, at: press, rail: rail, in: fixture)
+
+        XCTAssertEqual(try XCTUnwrap(travelling()).travellingTabTop, 0)
+        fixture.controller.tabRailManager.notePulledTab(pulled, top: 260)
+        let info = try XCTUnwrap(travelling())
+        XCTAssertEqual(info.travellingTabTop, 260)
+        XCTAssertEqual(info.tabCount, 1)
+        XCTAssertEqual(info.tabs.map(\.token), [pulled])
+        XCTAssertEqual(info.tileFrame, tile(start))
+        XCTAssertEqual(info.orderingWindowId, fixture.controller.workspaceManager.entry(for: pulled)?.windowId)
+        let column = try XCTUnwrap(handler.desiredTabRailInfos().first { $0.owner == .niriColumn(tabbed.id) })
+        XCTAssertEqual(column.tabCount, 2)
+        XCTAssertFalse(column.tabs.contains { $0.token == pulled || $0.token == nil })
+
+        let away = CGPoint(x: press.x + 150, y: press.y + 30)
+        fixture.drag(to: away)
+        let moved = start.offsetBy(dx: away.x - press.x, dy: away.y - press.y)
+        XCTAssertEqual(try XCTUnwrap(travelling()).tileFrame, tile(moved))
+        let step = try XCTUnwrap(handler.niriTabRailGeometryCommands(
+            engine: fixture.engine,
+            workspaceId: fixture.workspaceId,
+            monitor: fixture.controller.layoutRefreshController.buildMonitorSnapshot(for: fixture.monitor)
+        ).first { $0.key.owner == .niriColumn(pulledNode.id) })
+        XCTAssertEqual(step.tileFrame, tile(moved))
+
+        fixture.handler.dispatchMouseUp(at: away)
+        XCTAssertNil(fixture.engine.liveColumnMove)
+        XCTAssertNil(travelling())
+    }
+
+    func testOtherStylesKeepTheBlankTabAndNoTravellingTab() throws {
+        let fixture = try makeFixture(pid: 938_408, windowCount: 6, tabbedRuns: [1 ... 3])
+        fixture.controller.settings.tabRailStyle = .appIcons
+        let pulled = fixture.tokens[2]
+        let rail = try railInfo(holding: pulled, in: fixture)
+        let start = try fixture.frame(pulled)
+        fixture.handler.nativeWindowFrameProvider = { _ in start }
+        let pulledNode = try XCTUnwrap(fixture.engine.findNode(for: pulled, in: fixture.workspaceId))
+
+        tabPull(pulled, at: CGPoint(x: start.minX - 10, y: start.midY), rail: rail, in: fixture)
+
+        XCTAssertFalse(fixture.controller.niriLayoutHandler.desiredTabRailInfos().contains {
+            $0.owner == .niriColumn(pulledNode.id)
+        })
     }
 
     func testDraggingATabInTheRailPullsItOutAndTheWindowFollowsThePointer() throws {

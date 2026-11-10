@@ -195,11 +195,11 @@ final class TabRailStyleLayoutTests: XCTestCase {
         XCTAssertEqual(niri.renderStyle.tabIndicatorWidth, 10)
         XCTAssertEqual(dwindle.tabRailWidth, 10)
 
-        for enabled in [true, false] {
+        for style in [TabRailStyle.appIcons, .sidewaysTabs, .compact] {
             controller.layoutRefreshController.resetState()
-            controller.setTabRailAppIcons(enabled)
-            let expectedWidth: CGFloat = enabled ? 28 : 10
-            XCTAssertEqual(settings.tabRailAppIcons, enabled)
+            controller.setTabRailStyle(style)
+            let expectedWidth: CGFloat = [.appIcons: 28, .sidewaysTabs: 40, .compact: 10][style] ?? 0
+            XCTAssertEqual(settings.tabRailStyle, style)
             XCTAssertEqual(controller.tabRailStyle.reservedWidth, expectedWidth)
             XCTAssertEqual(niri.renderStyle.tabIndicatorWidth, expectedWidth)
             XCTAssertEqual(dwindle.tabRailWidth, expectedWidth)
@@ -215,14 +215,14 @@ final class TabRailStyleLayoutTests: XCTestCase {
         }
 
         settings.quakeTerminal.enabled = false
-        for enabled in [true, false] {
+        for style in [TabRailStyle.appIcons, .sidewaysTabs, .compact] {
             var exported = settings.toExport()
-            exported.tabRailAppIcons = enabled
+            exported.tabRailStyle = style
             settings.applyExport(exported)
             controller.layoutRefreshController.resetState()
             controller.applyPersistedSettings(settings, startServices: false)
-            XCTAssertEqual(niri.renderStyle.tabIndicatorWidth, enabled ? 28 : 10)
-            XCTAssertEqual(dwindle.tabRailWidth, enabled ? 28 : 10)
+            XCTAssertEqual(niri.renderStyle.tabIndicatorWidth, style.reservedWidth)
+            XCTAssertEqual(dwindle.tabRailWidth, style.reservedWidth)
             XCTAssertNotNil(controller.layoutRefreshController.layoutState.pendingRefresh)
         }
     }

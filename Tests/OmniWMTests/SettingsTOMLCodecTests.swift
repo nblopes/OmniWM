@@ -74,32 +74,82 @@ final class SettingsTOMLCodecTests: XCTestCase {
         XCTAssertNil(result.migration)
     }
 
-    func testTabRailAppIconsDefaultsAndRoundTrips() throws {
+    func testTabRailStyleDefaultsAndRoundTripsWithTheOlderKey() throws {
         var export = SettingsExport.defaults()
-        XCTAssertFalse(export.tabRailAppIcons)
+        XCTAssertEqual(export.tabRailStyle, .compact)
 
-        for enabled in [false, true] {
-            export.tabRailAppIcons = enabled
+        for style in TabRailStyle.allCases {
+            export.tabRailStyle = style
             let data = try SettingsTOMLCodec.encode(export)
             let text = String(decoding: data, as: UTF8.self)
-            let appearanceSection = try XCTUnwrap(text.components(separatedBy: "[appearance]\n").last)
-                .components(separatedBy: "\n[").first
+            let appearanceSection = try XCTUnwrap(
+                try XCTUnwrap(text.components(separatedBy: "[appearance]\n").last)
+                    .components(separatedBy: "\n[").first
+            )
 
-            XCTAssertTrue(try XCTUnwrap(appearanceSection).contains("tabRailAppIcons = \(enabled)"))
+            XCTAssertTrue(appearanceSection.contains("tabRailStyle = \"\(style.rawValue)\""))
+            XCTAssertTrue(appearanceSection.contains("tabRailAppIcons = \(style == .appIcons)"))
             XCTAssertEqual(try SettingsTOMLCodec.decode(data), export)
-            XCTAssertFalse(SettingsTOMLCodec.unknownKeyPaths(in: data).contains("appearance.tabRailAppIcons"))
+            let unknown = SettingsTOMLCodec.unknownKeyPaths(in: data)
+            XCTAssertFalse(unknown.contains("appearance.tabRailAppIcons"))
+            XCTAssertFalse(unknown.contains("appearance.tabRailStyle"))
         }
     }
 
-    func testMissingTabRailAppIconsDefaultsToCompactWithoutMigration() throws {
-        let withoutKey = try canonicalDefaultLines { lines in
-            let index = try XCTUnwrap(lines.firstIndex(of: "tabRailAppIcons = false"))
-            lines.remove(at: index)
+    func testOlderFilesWithoutTabRailStyleKeepTheirAppIconsChoiceWithoutMigration() throws {
+        for appIcons in [false, true] {
+            let olderFile = try canonicalDefaultLines { lines in
+                let index = try XCTUnwrap(lines.firstIndex(of: "tabRailStyle = \"compact\""))
+                lines.remove(at: index)
+                let appIconsIndex = try XCTUnwrap(lines.firstIndex(of: "tabRailAppIcons = false"))
+                lines[appIconsIndex] = "tabRailAppIcons = \(appIcons)"
+            }
+
+            let result = try SettingsTOMLCodec.decodeForLoad(olderFile)
+
+            XCTAssertEqual(result.export.tabRailStyle, appIcons ? .appIcons : .compact)
+            XCTAssertNil(result.migration)
+            XCTAssertNil(result.migratedData)
+        }
+    }
+
+    func testTheStyleKeyWinsOverTheOlderAppIconsKey() throws {
+        var export = SettingsExport.defaults()
+        export.tabRailStyle = .sidewaysTabs
+        let saved = String(decoding: try SettingsTOMLCodec.encode(export), as: UTF8.self)
+        XCTAssertTrue(saved.contains("tabRailAppIcons = false"))
+        let iconsOn = Data(saved.replacingOccurrences(of: "tabRailAppIcons = false", with: "tabRailAppIcons = true")
+            .utf8)
+        XCTAssertEqual(try SettingsTOMLCodec.decode(iconsOn).tabRailStyle, .sidewaysTabs)
+
+        let editedToIcons = Data(saved.replacingOccurrences(
+            of: "tabRailStyle = \"sidewaysTabs\"",
+            with: "tabRailStyle = \"appIcons\""
+        ).utf8)
+        XCTAssertEqual(try SettingsTOMLCodec.decode(editedToIcons).tabRailStyle, .appIcons)
+    }
+
+    func testAFileWithOnlyTheStyleKeyKeepsItsStyle() throws {
+        for style in TabRailStyle.allCases {
+            var export = SettingsExport.defaults()
+            export.tabRailStyle = style
+            let saved = String(decoding: try SettingsTOMLCodec.encode(export), as: UTF8.self)
+            let onlyStyle = Data(saved.components(separatedBy: "\n")
+                .filter { !$0.hasPrefix("tabRailAppIcons = ") }
+                .joined(separator: "\n").utf8)
+
+            XCTAssertEqual(try SettingsTOMLCodec.decodeForLoad(onlyStyle).export.tabRailStyle, style)
+        }
+    }
+
+    func testMissingTabRailKeysDefaultToCompactWithoutMigration() throws {
+        let withoutKeys = try canonicalDefaultLines { lines in
+            lines.removeAll { $0 == "tabRailAppIcons = false" || $0 == "tabRailStyle = \"compact\"" }
         }
 
-        let result = try SettingsTOMLCodec.decodeForLoad(withoutKey)
+        let result = try SettingsTOMLCodec.decodeForLoad(withoutKeys)
 
-        XCTAssertFalse(result.export.tabRailAppIcons)
+        XCTAssertEqual(result.export.tabRailStyle, .compact)
         XCTAssertNil(result.migration)
         XCTAssertNil(result.migratedData)
     }

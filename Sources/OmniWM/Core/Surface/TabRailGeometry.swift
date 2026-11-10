@@ -47,18 +47,24 @@ enum TabRailMetrics {
 @MainActor
 enum TabRailPlacement {
     static func frame(
-        for visibleTileFrame: CGRect, tabCount: Int, style: TabRailStyle, displayFrame: CGRect? = nil
+        for visibleTileFrame: CGRect, tabCount: Int, style: TabRailStyle, displayFrame: CGRect? = nil,
+        tileFrame: CGRect? = nil
     ) -> CGRect {
         guard tabCount > 0,
               TabRailManager.isRenderable(visibleTileFrame: visibleTileFrame)
         else { return .zero }
-        let width = style.hitWidth
-        let height = style.fittedHeight(tabCount: tabCount, availableHeight: visibleTileFrame.height)
+        let width = style.hitWidth + style.windowOverlap
+        let anchor = style.followsWholeTile ? (tileFrame.flatMap(Self.usable) ?? visibleTileFrame) : visibleTileFrame
+        let height = style.fittedHeight(tabCount: tabCount, availableHeight: anchor.height)
         guard height > 1 else { return .zero }
-        let x = visibleTileFrame.minX - (width - style.reservedWidth)
-        let y = visibleTileFrame.minY + (visibleTileFrame.height - height) / 2
+        let x = anchor.minX - (style.hitWidth - style.reservedWidth)
+        let y = anchor.minY + (anchor.height - height) / 2
         let frame = CGRect(x: x, y: y, width: width, height: height)
         return displayFrame.map { frame.intersection($0) } ?? frame
+    }
+
+    private static func usable(_ frame: CGRect) -> CGRect? {
+        frame.isNull || frame.isInfinite || frame.width <= 0 || frame.height <= 0 ? nil : frame
     }
 }
 

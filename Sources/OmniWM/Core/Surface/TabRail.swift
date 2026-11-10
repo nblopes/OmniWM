@@ -52,6 +52,7 @@ struct TabRailInfo: Equatable {
     let activeWindowId: Int?
     let orderingWindowId: Int?
     let displayFrame: CGRect?
+    let travellingTabTop: CGFloat?
     let tabs: [TabRailTabInfo]
 
     var key: TabRailKey {
@@ -69,7 +70,8 @@ struct TabRailInfo: Equatable {
         activeWindowId: Int?,
         tabs: [TabRailTabInfo]? = nil,
         orderingWindowId: Int? = nil,
-        displayFrame: CGRect? = nil
+        displayFrame: CGRect? = nil,
+        travellingTabTop: CGFloat? = nil
     ) {
         self.workspaceId = workspaceId
         self.owner = owner
@@ -81,6 +83,7 @@ struct TabRailInfo: Equatable {
         self.activeWindowId = activeWindowId
         self.orderingWindowId = orderingWindowId
         self.displayFrame = displayFrame
+        self.travellingTabTop = travellingTabTop
         self.tabs = tabs ?? Self.defaultTabs(tabCount: tabCount, activeVisualIndex: activeVisualIndex)
     }
 

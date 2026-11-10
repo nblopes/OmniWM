@@ -45,12 +45,18 @@ struct AppearanceSettingsPage: View {
 
                 SettingsCaption(localized: "Follows macOS appearance or uses the selected light or dark appearance.")
 
-                Toggle("Show app icons in tab rails", isOn: Binding(
-                    get: { settings.tabRailAppIcons },
-                    set: { controller.setTabRailAppIcons($0) }
-                ))
-                .id("Show app icons in tab rails")
-                SettingsCaption(localized: "Replaces compact markers with app icons. Applies to Niri and Dwindle.")
+                Picker("Tab rail style", selection: Binding(
+                    get: { settings.tabRailStyle },
+                    set: { controller.setTabRailStyle($0) }
+                )) {
+                    ForEach(TabRailStyle.allCases, id: \.self) { style in
+                        Text(style.localizedDisplayName).tag(style)
+                    }
+                }
+                .id("Tab rail style")
+                SettingsCaption(
+                    localized: "Compact markers, app icons, or tabs with app names along the column's edge. Applies to Niri and Dwindle."
+                )
 
                 Toggle("Enable Animations", isOn: animationsEnabled)
                     .id("Enable Animations")

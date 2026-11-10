@@ -27,7 +27,7 @@ A binary space partition layout that recursively divides screen space. Each new 
 
 Both layouts show a tab rail beside grouped windows. Click a tab to reveal and focus that window without changing the group order. Hovering a tab also shows its window title, app, and position in the group.
 
-Enable **Settings → Appearance → App & Motion → Show app icons in tab rails** to replace compact markers with icons; crowded icon rails scroll vertically. See the [appearance reference](/config/settings-reference/#appearance).
+Choose how the rail looks in **Settings → Appearance → App & Motion → Tab rail style**: *Compact* markers, *App icons*, or *Sideways tabs*, which shows each window as a tab turned on its side with its app's icon and name, coloured from the icon. Crowded rails scroll vertically. See the [appearance reference](/config/settings-reference/#appearance).
 
 ## Floating windows
 

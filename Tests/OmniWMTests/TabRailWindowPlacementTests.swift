@@ -38,6 +38,17 @@ final class TabRailWindowPlacementTests: XCTestCase {
             directOrders.append(target)
         }
 
+        var belowOrderIns: [UInt32] = []
+        var belowDirectOrders: [UInt32] = []
+
+        override func orderInWindowServer(below target: UInt32) {
+            belowOrderIns.append(target)
+        }
+
+        override func orderDirectly(below target: UInt32) {
+            belowDirectOrders.append(target)
+        }
+
         override func setFrame(_ frameRect: NSRect, display flag: Bool) {
             frameWrites.append(frameRect)
             super.setFrame(frameRect, display: flag)
@@ -234,5 +245,39 @@ final class TabRailWindowPlacementTests: XCTestCase {
         XCTAssertTrue(stays(target(centeredOn: CGPoint(x: left.minX - inset, y: left.midY)), current: left))
         XCTAssertFalse(stays(target(centeredOn: CGPoint(x: left.minX - size.width, y: left.midY)), current: left))
         XCTAssertFalse(stays(target(centeredOn: CGPoint(x: left.midX, y: left.midY)), current: nil))
+    }
+
+    func testRailsStayOutOfMissionControl() {
+        let rail = makeRail()
+        defer { rail.close() }
+        XCTAssertTrue(rail.collectionBehavior.contains(.transient))
+        XCTAssertFalse(rail.collectionBehavior.contains(.managed))
+        XCTAssertTrue(rail.collectionBehavior.contains(.fullScreenAuxiliary))
+    }
+
+    func testSidewaysTabsOrderDirectlyBelowTheirWindowEvenWithARing() {
+        let rail = makeRail()
+        defer { rail.close() }
+        let ring = UInt32(windowId + 1)
+        let other = windowId + 2
+        rail.ringOrderedAbove = { [windowId] in $0 == UInt32(windowId) ? ring : nil }
+
+        rail.update(info: info(activeWindowId: windowId), forceOrdering: false, style: .sidewaysTabs)
+        rail.update(info: info(activeWindowId: other), forceOrdering: false, style: .sidewaysTabs)
+
+        XCTAssertEqual(rail.belowDirectOrders, [UInt32(windowId), UInt32(other)])
+        XCTAssertTrue(rail.directOrders.isEmpty)
+    }
+
+    func testSwitchingStyleReordersTheRailBesideItsWindow() {
+        let rail = makeRail()
+        defer { rail.close() }
+
+        rail.update(info: info(activeWindowId: windowId), forceOrdering: false, style: .compact)
+        rail.update(info: info(activeWindowId: windowId), forceOrdering: false, style: .sidewaysTabs)
+        rail.update(info: info(activeWindowId: windowId), forceOrdering: false, style: .compact)
+
+        XCTAssertEqual(rail.belowDirectOrders, [UInt32(windowId)])
+        XCTAssertEqual(rail.directOrders, [UInt32(windowId), UInt32(windowId)])
     }
 }

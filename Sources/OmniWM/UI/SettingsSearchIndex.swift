@@ -36,7 +36,7 @@ enum SettingsSearchIndex {
         setting("Check for Updates...", section: .general, anchor: "Check for Updates..."),
         setting("Appearance", section: .appearance, tab: "app", anchor: "Appearance"),
         setting("App Appearance", section: .appearance, tab: "app", anchor: "App Appearance"),
-        setting("Show app icons in tab rails", section: .appearance, tab: "app", anchor: "Show app icons in tab rails"),
+        setting("Tab rail style", section: .appearance, tab: "app", anchor: "Tab rail style"),
         setting("Enable Animations", section: .appearance, tab: "app", anchor: "Enable Animations"),
         setting("Tiling Animation Speed", section: .appearance, tab: "app", anchor: "Tiling Animation Speed"),
         setting("Window Borders", section: .appearance, tab: "borders", anchor: "Window Borders"),

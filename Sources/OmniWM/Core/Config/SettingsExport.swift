@@ -60,7 +60,7 @@ struct SettingsExport: Equatable {
     var quakeTerminal: QuakeTerminal
 
     var appearanceMode: AppearanceMode
-    var tabRailAppIcons: Bool
+    var tabRailStyle: TabRailStyle
     var shellPermissions = ShellPermissionDecisions()
 
     struct Island: Codable, Equatable {

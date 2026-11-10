@@ -9,6 +9,10 @@ final class TabRailView: NSView {
     private let motionPolicy: MotionPolicy
     private let appInfoCache: AppInfoCache
     private var iconView: TabRailIconView?
+    private var sidewaysView: TabRailSidewaysTabsView?
+    private var pointerOverStrip = false
+    private var pressTurnedIntoDrag = false
+    private var isTravelling = false
     private var style: TabRailStyle = .compact
     private var railLayout = TabRailLayout.empty
 
@@ -58,7 +62,12 @@ final class TabRailView: NSView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func update(tabs: [TabRailTabInfo], activeVisualIndex: Int, style: TabRailStyle = .compact) {
+    func update(
+        tabs: [TabRailTabInfo],
+        activeVisualIndex: Int,
+        style: TabRailStyle = .compact,
+        travellingTabTop: CGFloat? = nil
+    ) {
         let styleChanged = self.style != style
         if styleChanged {
             invalidateHover()
@@ -73,6 +82,11 @@ final class TabRailView: NSView {
         self.activeVisualIndex = activeVisualIndex
         if style == .appIcons {
             iconView?.update(tabs: tabs, activeVisualIndex: activeVisualIndex)
+        }
+        sidewaysView?.update(tabs: tabs, activeVisualIndex: activeVisualIndex, firstTabTop: travellingTabTop)
+        if isTravelling != (travellingTabTop != nil) {
+            isTravelling = travellingTabTop != nil
+            applyTuck()
         }
         updateTrackView(rebuildLayout: countChanged || activeChanged || styleChanged)
 
@@ -96,6 +110,7 @@ final class TabRailView: NSView {
         super.setFrameSize(newSize)
         guard sizeChanged else { return }
         iconView?.frame = bounds
+        sidewaysView?.frame = bounds
         updateTrackView(rebuildLayout: true)
         if !suppressAccessibilityGeometryUpdates {
             refreshAccessibilityElements()
@@ -111,6 +126,7 @@ final class TabRailView: NSView {
     func refreshAppearance() {
         trackView.refreshAppearance()
         iconView?.refreshAppearance()
+        sidewaysView?.refreshAppearance()
         updateTrackView()
     }
 
@@ -159,18 +175,43 @@ final class TabRailView: NSView {
 
     override func mouseEntered(with event: NSEvent) {
         updateHoveredVisualIndex(with: event)
+        updateTuck(pointer: convert(event.locationInWindow, from: nil), buttonHeld: NSEvent.pressedMouseButtons != 0)
     }
 
     override func mouseMoved(with event: NSEvent) {
         updateHoveredVisualIndex(with: event)
+        updateTuck(pointer: convert(event.locationInWindow, from: nil), buttonHeld: NSEvent.pressedMouseButtons != 0)
     }
 
     override func mouseExited(with _: NSEvent) {
         invalidateHover()
+        updateTuck(pointer: nil)
+    }
+
+    private func updateTuck(pointer: CGPoint?, buttonHeld: Bool = false) {
+        pointerOverStrip = !buttonHeld && pointer.map { point in
+            point.x >= 0 && point.x < bounds.width - style.windowOverlap && point.y >= 0 && point.y <= bounds.height
+        } ?? false
+        applyTuck()
+    }
+
+    private func applyTuck() {
+        sidewaysView?.showsTuck = !pointerOverStrip || pressTurnedIntoDrag || isTravelling
+    }
+
+    func tabTop(_ visualIndex: Int) -> CGFloat? {
+        style == .sidewaysTabs ? sidewaysView?.tabTop(visualIndex) : nil
+    }
+
+    override func shouldDelayWindowOrdering(for _: NSEvent) -> Bool {
+        style == .sidewaysTabs
     }
 
     override func mouseDown(with event: NSEvent) {
+        if style == .sidewaysTabs { NSApp.preventWindowOrdering() }
         let point = convert(event.locationInWindow, from: nil)
+        pressTurnedIntoDrag = false
+        updateTuck(pointer: point)
         guard let item = item(at: point) else { return }
         dragGesture.press(visualIndex: item.visualIndex, at: NSEvent.mouseLocation)
         onSelect?(item.visualIndex)
@@ -180,24 +221,32 @@ final class TabRailView: NSView {
         guard acceptsDrags() else { return super.mouseDragged(with: event) }
         let location = NSEvent.mouseLocation
         guard let gestureEvent = dragGesture.drag(to: location) else { return }
+        if !pressTurnedIntoDrag {
+            pressTurnedIntoDrag = true
+            updateTuck(pointer: convert(event.locationInWindow, from: nil))
+        }
         onDrag?(gestureEvent, location)
     }
 
     override func mouseUp(with event: NSEvent) {
         dragGesture.release()
+        pressTurnedIntoDrag = false
+        updateTuck(pointer: convert(event.locationInWindow, from: nil))
         guard acceptsDrags() else { return super.mouseUp(with: event) }
     }
 
     override func scrollWheel(with event: NSEvent) {
         if style == .appIcons {
             iconView?.scrollWheel(with: event)
+        } else if style == .sidewaysTabs {
+            sidewaysView?.scrollWheel(with: event)
         } else {
             super.scrollWheel(with: event)
         }
     }
 
     func item(at point: CGPoint) -> TabRailLayout.Item? {
-        if style == .appIcons {
+        if style != .compact {
             return currentLayout().items.first { !$0.hitRect.isEmpty && $0.hitRect.contains(point) }
         }
         guard railLayout.railRect.contains(point) else { return nil }
@@ -236,9 +285,11 @@ final class TabRailView: NSView {
     }
 
     override func accessibilityHelp() -> String? {
-        style == .appIcons
-            ? String(localized: "Click an app icon to select its window. Scroll to see more tabs.")
-            : String(localized: "Click a segment to select that tab.")
+        switch style {
+        case .compact: String(localized: "Click a segment to select that tab.")
+        case .appIcons: String(localized: "Click an app icon to select its window. Scroll to see more tabs.")
+        case .sidewaysTabs: String(localized: "Click a tab to select its window. Scroll to see more tabs.")
+        }
     }
 
     private func updateHoveredVisualIndex(with event: NSEvent) {
@@ -255,6 +306,7 @@ final class TabRailView: NSView {
     private func updateTrackView(rebuildLayout: Bool = false) {
         guard style == .compact else {
             iconView?.updateHover(hoveredVisualIndex)
+            sidewaysView?.updateHover(hoveredVisualIndex)
             return
         }
         if rebuildLayout {
@@ -287,7 +339,11 @@ final class TabRailView: NSView {
     }
 
     private func currentLayout() -> TabRailLayout {
-        style == .appIcons ? (iconView?.railLayout(in: self) ?? .empty) : railLayout
+        switch style {
+        case .compact: railLayout
+        case .appIcons: iconView?.railLayout(in: self) ?? .empty
+        case .sidewaysTabs: sidewaysView?.railLayout(in: self) ?? .empty
+        }
     }
 
     private func configureStyle() {
@@ -305,6 +361,20 @@ final class TabRailView: NSView {
         } else {
             iconView?.removeFromSuperview()
             iconView = nil
+        }
+        if style == .sidewaysTabs {
+            let strip = TabRailSidewaysTabsView(appInfoCache: appInfoCache)
+            strip.frame = bounds
+            strip.onWillScroll = { [weak self] in self?.invalidateHover() }
+            strip.onDidScroll = { [weak self] in
+                guard let self, !suppressAccessibilityGeometryUpdates else { return }
+                refreshAccessibilityFrames()
+            }
+            sidewaysView = strip
+            addSubview(strip)
+        } else {
+            sidewaysView?.removeFromSuperview()
+            sidewaysView = nil
         }
     }
 }
@@ -335,6 +405,7 @@ extension TabRailView {
                 },
                 revealAction: { [weak self] visualIndex in
                     self?.iconView?.reveal(visualIndex)
+                    self?.sidewaysView?.reveal(visualIndex)
                 }
             )
             return element
@@ -351,6 +422,7 @@ extension TabRailView {
     private func performAccessibilitySelection(_ visualIndex: Int) -> Bool {
         guard tabs.contains(where: { $0.visualIndex == visualIndex }) else { return false }
         iconView?.reveal(visualIndex)
+        sidewaysView?.reveal(visualIndex)
         onSelect?(visualIndex)
         return true
     }
