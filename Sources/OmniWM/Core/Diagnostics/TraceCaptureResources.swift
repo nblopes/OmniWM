@@ -26,6 +26,7 @@ struct TraceCaptureResources {
         ShellFrameTrace.shared,
         ShellNotificationTrace.shared,
         BorderOpMetricsRecorder.shared,
+        TabRailRenderMetricsRecorder.shared,
         MouseTrace.shared,
         TrackpadScrollTrace.shared,
         InputTrace.shared

@@ -292,11 +292,15 @@ class TabRailWindow: NSPanel {
 
     private func placeInWindowServer(_ target: CGRect) -> Bool {
         guard moveInWindowServer(to: target) else { return false }
+        if style == .sidewaysTabs { TabRailRenderMetricsRecorder.shared.noteWindowMove() }
         windowServerPlacement = (frame, target)
         return true
     }
 
     private func setFrameReconcilingWindowServer(_ target: CGRect) {
+        if style == .sidewaysTabs, target.size != frame.size {
+            TabRailRenderMetricsRecorder.shared.noteWindowResize()
+        }
         let previousAppliedFrame = appliedFrame
         let windowServerOriginDiverged = previousAppliedFrame != frame
         setFrame(target, display: false)

@@ -14,7 +14,7 @@ final class TabRailSidewaysTabsView: NSView {
         didSet {
             guard showsTuck != oldValue else { return }
             document.showsTuck = showsTuck
-            document.needsDisplay = true
+            document.invalidate(.tuck)
         }
     }
 
@@ -80,28 +80,43 @@ final class TabRailSidewaysTabsView: NSView {
             if tab.icon == nil { tab.icon = tab.token.flatMap { appInfoCache.info(for: $0.pid)?.icon } }
             return tab
         }
-        let membershipChanged = self.tabs.map(\.token) != tabs.map(\.token)
-            || self.tabs.map(TabRailSidewaysTabsDocumentView.label(for:))
-            != tabs.map(TabRailSidewaysTabsDocumentView.label(for:))
+        let drawnChanged = Self.drawn(self.tabs) != Self.drawn(tabs)
         let activeChanged = self.activeVisualIndex != activeVisualIndex
         let topChanged = self.firstTabTop != firstTabTop
-        self.firstTabTop = firstTabTop
-        guard membershipChanged || activeChanged || topChanged || self.tabs != tabs else { return }
         self.tabs = tabs
+        self.firstTabTop = firstTabTop
         self.activeVisualIndex = activeVisualIndex
+        guard drawnChanged || activeChanged || topChanged else {
+            TabRailRenderMetricsRecorder.shared.noteSkippedUpdate()
+            return
+        }
         document.tabs = tabs
         document.activeVisualIndex = activeVisualIndex
-        if membershipChanged || activeChanged || topChanged {
-            layoutDocument()
-            reveal(activeVisualIndex)
+        layoutDocument()
+        reveal(activeVisualIndex)
+        document.invalidate(.tabs)
+    }
+
+    private struct DrawnTab: Equatable {
+        let token: WindowToken?
+        let label: String
+        let icon: ObjectIdentifier?
+    }
+
+    private static func drawn(_ tabs: [TabRailTabInfo]) -> [DrawnTab] {
+        tabs.map { tab in
+            DrawnTab(
+                token: tab.token,
+                label: TabRailSidewaysTabsDocumentView.label(for: tab),
+                icon: tab.icon.map(ObjectIdentifier.init)
+            )
         }
-        document.needsDisplay = true
     }
 
     func updateHover(_ visualIndex: Int?) {
         guard document.hoveredVisualIndex != visualIndex else { return }
         document.hoveredVisualIndex = visualIndex
-        document.needsDisplay = true
+        document.invalidate(.hover)
     }
 
     func reveal(_ visualIndex: Int) {
@@ -136,17 +151,17 @@ final class TabRailSidewaysTabsView: NSView {
     }
 
     func refreshAppearance() {
-        document.needsDisplay = true
+        document.invalidate(.appearance)
     }
 
     private func layoutDocument() {
         let lengths = tabs.map { tab in
-            SidewaysTabMetrics.labelledLength(
+            SidewaysTabMetrics.contentLength(
                 labelWidth: Self.labelWidth(TabRailSidewaysTabsDocumentView.label(for: tab))
             )
         }
         let layout = SidewaysTabLayout(
-            labelledLengths: lengths, viewportLength: bounds.height,
+            contentLengths: lengths, viewportLength: bounds.height,
             width: min(bounds.width, SidewaysTabMetrics.stripWidth),
             activeVisualIndex: activeVisualIndex,
             firstTabTop: firstTabTop
@@ -156,7 +171,7 @@ final class TabRailSidewaysTabsView: NSView {
         document.layout = layout
         document.setFrameSize(size)
         scroll(to: scrollView.contentView.bounds.origin)
-        document.needsDisplay = true
+        document.invalidate(.layout)
     }
 
     private static var labelWidths: [String: CGFloat] = [:]
@@ -189,34 +204,111 @@ final class TabRailSidewaysTabsDocumentView: NSView {
     var hoveredVisualIndex: Int?
     var showsTuck = true
     var layout = SidewaysTabLayout.empty
+    private var pendingCause: TabRailRenderMetricsRecorder.UpdateCause?
+    private var groups: [SidewaysTabLayers] = []
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+        layerContentsRedrawPolicy = .onSetNeedsDisplay
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
     override var isFlipped: Bool {
         true
     }
 
-    override func draw(_: NSRect) {
-        guard let context = NSGraphicsContext.current?.cgContext else { return }
+    override var wantsUpdateLayer: Bool {
+        true
+    }
+
+    func tabLayers(at index: Int) -> SidewaysTabLayers? {
+        groups.indices.contains(index) ? groups[index] : nil
+    }
+
+    var hasPendingLayerUpdate: Bool {
+        pendingCause != nil
+    }
+
+    func invalidate(_ cause: TabRailRenderMetricsRecorder.UpdateCause) {
+        if pendingCause == nil { pendingCause = cause }
+        needsDisplay = true
+    }
+
+    override func viewDidChangeBackingProperties() {
+        super.viewDidChangeBackingProperties()
+        invalidate(.appearance)
+    }
+
+    override func updateLayer() {
+        TabRailRenderMetricsRecorder.shared.notePass(pendingCause ?? .layout)
+        pendingCause = nil
+        applyLayers()
+    }
+
+    func applyLayers() {
+        guard let root = layer else { return }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        defer { CATransaction.commit() }
         let dark = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         let highContrast = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
-        let active = layout.tabRects.indices.contains(activeVisualIndex) ? activeVisualIndex : nil
-        for index in layout.tabRects.indices.reversed() where index != active {
-            let colors = colors(at: index, active: false, dark: dark)
-            let shape = Self.tabPath(in: layout.tabRects[index])
-            drawShape(shape, fill: colors.fill, shadowAlpha: 0.3, blur: 4, highContrast: highContrast, in: context)
-            drawContent(at: index, active: false, label: colors.label)
+        let outline = highContrast ? Self.resolvedLabelColor(in: effectiveAppearance) : nil
+        let scale = window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 2
+        let down: CGFloat = root.contentsAreFlipped() ? 2 : -2
+        let count = layout.tabRects.count
+        while groups.count < count {
+            let group = SidewaysTabLayers()
+            root.addSublayer(group.shape)
+            root.addSublayer(group.content)
+            groups.append(group)
         }
-        guard let active else { return }
-        let colors = colors(at: active, active: true, dark: dark)
-        let shape = CGMutablePath()
-        shape.addPath(Self.tabPath(in: layout.tabRects[active]))
-        let bandRadius = SidewaysTabMetrics.bandWidth / 2
-        shape.addRoundedRect(
-            in: layout.bandRect(reaching: showsTuck ? bounds.maxX : min(bounds.maxX, SidewaysTabMetrics.stripWidth)),
-            cornerWidth: bandRadius,
-            cornerHeight: bandRadius
-        )
-        drawShape(shape, fill: colors.fill, shadowAlpha: 0.4, blur: 6, highContrast: highContrast, in: context)
-        drawContent(at: active, active: true, label: colors.label)
+        while groups.count > count {
+            groups.removeLast().removeFromSuperlayer()
+        }
+        let active = layout.tabRects.indices.contains(activeVisualIndex) ? activeVisualIndex : nil
+        for index in 0 ..< count {
+            let isActive = index == active
+            let shades = colors(at: index, active: isActive, dark: dark)
+            let shape = CGMutablePath()
+            shape.addPath(Self.tabPath(in: layout.tabRects[index]))
+            if isActive {
+                let bandRadius = SidewaysTabMetrics.bandWidth / 2
+                shape.addRoundedRect(
+                    in: layout.bandRect(
+                        reaching: showsTuck ? bounds.maxX : min(bounds.maxX, SidewaysTabMetrics.stripWidth)
+                    ),
+                    cornerWidth: bandRadius, cornerHeight: bandRadius
+                )
+            }
+            let order = isActive ? CGFloat(2 * count) : CGFloat(2 * (count - 1 - index))
+            groups[index].applyShape(
+                path: shape, fill: shades.fill.cgColor, outline: outline,
+                shadow: isActive ? (opacity: 0.4, blur: 6) : (opacity: 0.3, blur: 4),
+                shadowDown: down, order: order
+            )
+            guard tabs.indices.contains(index), layout.contentRects.indices.contains(index) else { continue }
+            let rect = layout.contentRects[index]
+            let label = layout.showsLabels ? Self.label(for: tabs[index]) : nil
+            let icon = tabs[index].icon
+            groups[index].applyContent(
+                key: SidewaysTabContent.Key(
+                    label: label, icon: icon, size: rect.size, active: isActive, labelColor: shades.label,
+                    scale: scale
+                ),
+                icon: icon, labelColor: shades.label, frame: rect, scale: scale, order: order + 1
+            )
+        }
+    }
+
+    private static func resolvedLabelColor(in appearance: NSAppearance) -> CGColor {
+        var color = NSColor.labelColor.cgColor
+        appearance.performAsCurrentDrawingAppearance { color = NSColor.labelColor.cgColor }
+        return color
     }
 
     private func colors(at index: Int, active: Bool, dark: Bool) -> TabRailTabColor.Shades {
@@ -226,31 +318,6 @@ final class TabRailSidewaysTabsDocumentView: NSView {
             hovered: !active && index == hoveredVisualIndex,
             dark: dark
         )
-    }
-
-    private func drawShape(
-        _ shape: CGPath, fill: NSColor, shadowAlpha: CGFloat, blur: CGFloat, highContrast: Bool,
-        in context: CGContext
-    ) {
-        context.saveGState()
-        context.setShadow(
-            offset: CGSize(width: 0, height: -2), blur: blur,
-            color: NSColor.black.withAlphaComponent(shadowAlpha).cgColor
-        )
-        context.addPath(shape)
-        context.setFillColor(fill.cgColor)
-        context.fillPath()
-        context.restoreGState()
-        guard highContrast else { return }
-        context.addPath(shape)
-        context.setStrokeColor(NSColor.labelColor.cgColor)
-        context.setLineWidth(1)
-        context.strokePath()
-    }
-
-    private func drawContent(at index: Int, active: Bool, label: NSColor) {
-        guard tabs.indices.contains(index), layout.hitRects.indices.contains(index) else { return }
-        drawContent(of: tabs[index], in: layout.hitRects[index], active: active, labelColor: label)
     }
 
     static func tabPath(in rect: CGRect) -> CGPath {
@@ -281,64 +348,8 @@ final class TabRailSidewaysTabsDocumentView: NSView {
         return path
     }
 
-    private static let activeFont = NSFont.systemFont(ofSize: NSFont.systemFontSize, weight: .medium)
-    private static let inactiveFont = NSFont.systemFont(ofSize: NSFont.systemFontSize, weight: .regular)
-    private static let fallbackIcon = NSImage(systemSymbolName: "macwindow", accessibilityDescription: nil)
-    private static let truncatingParagraph: NSParagraphStyle = {
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.lineBreakMode = .byTruncatingTail
-        return paragraph
-    }()
-
     static func font(active: Bool) -> NSFont {
-        active ? activeFont : inactiveFont
-    }
-
-    private func drawContent(of tab: TabRailTabInfo, in rect: CGRect, active: Bool, labelColor: NSColor) {
-        let length = rect.height
-        let width = rect.width
-        let iconSize = SidewaysTabMetrics.iconSize
-        let label = layout.showsLabels ? Self.label(for: tab) : nil
-        let iconX = label == nil ? (length - iconSize) / 2 : SidewaysTabMetrics.contentEndInset
-        NSGraphicsContext.saveGraphicsState()
-        defer { NSGraphicsContext.restoreGraphicsState() }
-        let transform = NSAffineTransform()
-        transform.translateX(by: rect.minX, yBy: rect.maxY)
-        transform.rotate(byRadians: -.pi / 2)
-        transform.concat()
-        if let icon = tab.icon ?? Self.fallbackIcon {
-            let iconRect = CGRect(x: iconX, y: (width - iconSize) / 2, width: iconSize, height: iconSize)
-            Self.draw(icon, in: iconRect, tint: icon.isTemplate ? labelColor : nil)
-        }
-        guard let label else { return }
-        let font = Self.font(active: active)
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .foregroundColor: labelColor,
-            .paragraphStyle: Self.truncatingParagraph
-        ]
-        let labelX = iconX + iconSize + SidewaysTabMetrics.iconLabelGap
-        let lineHeight = ceil(font.ascender - font.descender + font.leading)
-        let labelRect = CGRect(
-            x: labelX, y: (width - lineHeight) / 2,
-            width: max(0, length - labelX - SidewaysTabMetrics.contentEndInset), height: lineHeight
-        )
-        NSAttributedString(string: label, attributes: attributes)
-            .draw(with: labelRect, options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine])
-    }
-
-    private static func draw(_ icon: NSImage, in rect: CGRect, tint: NSColor?) {
-        guard let tint else {
-            icon.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
-            return
-        }
-        NSGraphicsContext.saveGraphicsState()
-        defer { NSGraphicsContext.restoreGraphicsState() }
-        NSGraphicsContext.current?.cgContext.beginTransparencyLayer(in: rect, auxiliaryInfo: nil)
-        icon.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
-        tint.setFill()
-        rect.fill(using: .sourceAtop)
-        NSGraphicsContext.current?.cgContext.endTransparencyLayer()
+        SidewaysTabContent.font(active: active)
     }
 
     static func label(for tab: TabRailTabInfo) -> String {
