@@ -26,6 +26,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         updateCoordinator: (any AppUpdateCoordinating)? = nil,
         section: SettingsSection? = nil,
         anchor: String? = nil,
+        route: SettingsRoute? = nil,
         presentMonitorSetup: Bool = false,
         appRuleDraft: AppRuleDraft? = nil,
         launcherRequest: LauncherEditorRequest? = nil
@@ -36,8 +37,8 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         controller.workspaceBarManager.updateShellPermissions(settings, reloadingManagedPolicy: true)
         if presentMonitorSetup {
             navigation.requestMonitorSetupPresentation()
-        } else if let section {
-            navigation.request(SettingsRoute(section: section, anchor: anchor))
+        } else if let route = route ?? section.map({ SettingsRoute(section: $0, anchor: anchor) }) {
+            navigation.request(route)
         }
         if let launcherRequest { navigation.presentLauncherEntry(launcherRequest) }
         if let appRuleDraft {

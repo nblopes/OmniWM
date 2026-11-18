@@ -71,6 +71,44 @@ cp "$BUILD_DIR/libOmniWMNowPlaying.dylib" "$APP_DIR/Contents/Frameworks/libOmniW
 python3 "$ROOT_DIR/Scripts/localization.py" package \
   --bundle "$BUILD_DIR/OmniWM_OmniWM.bundle" --app "$APP_DIR"
 
+echo "Extracting App Intents metadata..."
+INTENTS_OBJECTS="$BUILD_DIR/../../Intermediates.noindex/OmniWM.build/$(basename "$BUILD_DIR")/OmniWM-t.build/Objects-normal/arm64"
+INTENTS_WORK="$(mktemp -d)"
+trap 'rm -rf "$INTENTS_WORK"' EXIT
+find "$INTENTS_OBJECTS" -name '*.swiftconstvalues' > "$INTENTS_WORK/const-values"
+if [ ! -s "$INTENTS_WORK/const-values" ]; then
+  echo "package-app: no Swift const values in $INTENTS_OBJECTS" >&2
+  exit 1
+fi
+: > "$INTENTS_WORK/no-dependencies"
+DEPLOYMENT_TARGET="$(sed -nE 's/.*\.macOS\(\.v([0-9]+)\).*/\1.0/p' "$ROOT_DIR/Package.swift")"
+xcrun appintentsmetadataprocessor \
+  --toolchain-dir "$(dirname "$(dirname "$(dirname "$(xcrun --find swiftc)")")")" \
+  --module-name OmniWM \
+  --sdk-root "$(xcrun --sdk macosx --show-sdk-path)" \
+  --xcode-version "$(xcodebuild -version | awk '/Build version/ { print $3 }')" \
+  --platform-family macOS \
+  --deployment-target "$DEPLOYMENT_TARGET" \
+  --bundle-identifier "$BUNDLE_ID" \
+  --output "$APP_DIR/Contents/Resources" \
+  --target-triple "arm64-apple-macos$DEPLOYMENT_TARGET" \
+  --binary-file "$APP_DIR/Contents/MacOS/OmniWM" \
+  --dependency-file "$INTENTS_WORK/dependency-info" \
+  --stringsdata-file "$INTENTS_WORK/app-shortcuts.stringsdata" \
+  --source-file-list "$INTENTS_OBJECTS/OmniWM.SwiftFileList" \
+  --metadata-file-list "$INTENTS_WORK/no-dependencies" \
+  --static-metadata-file-list "$INTENTS_WORK/no-dependencies" \
+  --swift-const-vals-list "$INTENTS_WORK/const-values" \
+  --force \
+  --compile-time-extraction \
+  --deployment-aware-processing \
+  --no-app-shortcuts-localization
+if ! python3 -c 'import json, sys; sys.exit(0 if json.load(open(sys.argv[1]))["actions"] else 1)' \
+  "$APP_DIR/Contents/Resources/Metadata.appintents/extract.actionsdata"; then
+  echo "package-app: App Intents metadata is missing its actions" >&2
+  exit 1
+fi
+
 if command -v plutil >/dev/null 2>&1; then
   plutil -lint "$APP_DIR/Contents/Info.plist" >/dev/null
 fi
