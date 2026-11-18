@@ -33,6 +33,10 @@ extension IPCCommandRouter {
             return result
         }
 
+        return Self.focusWorkspace(rawWorkspaceID: rawWorkspaceID, controller: controller)
+    }
+
+    static func focusWorkspace(rawWorkspaceID: String, controller: WMController) -> ExternalCommandResult {
         if let currentWorkspace = controller.activeWorkspace(),
            currentWorkspace.name == rawWorkspaceID,
            controller.workspaceNavigationHandler.canSkipSwitch(toVisibleWorkspace: currentWorkspace.id)

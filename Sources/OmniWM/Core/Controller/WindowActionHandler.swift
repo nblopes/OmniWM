@@ -357,7 +357,7 @@ extension WindowActionHandler {
         return appInfoMap.values.sorted { $0.appName < $1.appName }
     }
 
-    private func restoreMinimizedWindowIfNeeded(_ handle: WindowHandle) -> Bool {
+    func restoreMinimizedWindowIfNeeded(_ handle: WindowHandle) -> Bool {
         guard let controller,
               let entry = controller.workspaceManager.entry(for: handle)
         else { return true }

@@ -63,6 +63,7 @@ extension WorkspaceManager {
             notifySessionStateChanged()
         }
         drainPendingRuntimeMonitorOverrideClears()
+        StateChangeWaiters.shared.signal()
         return affectedWorkspaceIds
     }
 
