@@ -79,6 +79,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     public func applicationDidFinishLaunching(_: Notification) {
         NSApplication.shared.setActivationPolicy(.accessory)
         _ = OmniWMBuildInfo.executableSHA256
+        SpotlightSettingsIndex.update()
         bootstrapApplication()
     }
 
@@ -171,6 +172,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         AppDelegate.sharedBootstrap?.settings = settings
         AppDelegate.sharedBootstrap?.controller = controller
         AppDelegate.sharedBootstrap?.updateCoordinator = updateCoordinator
+        StateChangeWaiters.shared.signal()
 
         FatalCapture.install(controllerProvider: { AppDelegate.sharedBootstrap?.controller })
         controller.pendingCrashReport = FatalCapture.consumePending()

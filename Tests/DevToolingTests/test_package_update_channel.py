@@ -25,17 +25,27 @@ class PackageUpdateChannelTests(unittest.TestCase):
         (scripts / "localization.py").write_text("raise SystemExit(0)\n")
         tools = self.root / "tools"
         tools.mkdir()
-        for name in ("make", "lipo", "spctl", "syspolicy_check", "xcrun"):
+        for name in ("make", "lipo", "spctl", "syspolicy_check", "xcodebuild"):
             self.command(tools / name, "exit 0\n")
+        self.command(tools / "xcrun", 'if [[ "${1:-}" == appintentsmetadataprocessor ]]; then\n'
+                     '  while [[ "$1" != --output ]]; do shift; done\n'
+                     '  mkdir -p "$2/Metadata.appintents"\n'
+                     '  printf \'{"actions": {"TestIntent": {}}}\' > "$2/Metadata.appintents/extract.actionsdata"\n'
+                     'fi\n')
         self.command(tools / "swift", 'for arg in "$@"; do\n'
-                     '  if [[ "$arg" == --show-bin-path ]]; then printf "%s\\n" "$OMNIWM_TEST_ROOT/build"; fi\n'
+                     '  if [[ "$arg" == --show-bin-path ]]; then printf "%s\\n" "$OMNIWM_TEST_ROOT/.build/arm64-apple-macosx/release"; fi\n'
                      'done\n')
         self.command(tools / "ditto", 'for output in "$@"; do :; done\ntouch "$output"\n')
         self.command(tools / "codesign", 'if [[ -n "${OMNIWM_CANARY_TAG:-}" ]]; then\n'
                      '  plutil -extract OMNIWMCanaryTag raw "$OMNIWM_TEST_ROOT/dist/OmniWM.app/Contents/Info.plist" '
                      '>> "$OMNIWM_TEST_ROOT/signed-tags"\nfi\n')
-        build = self.root / "build"
-        build.mkdir()
+        build = self.root / ".build/arm64-apple-macosx/release"
+        build.mkdir(parents=True)
+        objects = self.root / ".build/Intermediates.noindex/OmniWM.build/release/OmniWM-t.build/Objects-normal/arm64"
+        objects.mkdir(parents=True)
+        (objects / "SpotlightActions.swiftconstvalues").touch()
+        (objects / "OmniWM.SwiftFileList").touch()
+        (self.root / "Package.swift").write_text("platforms: [.macOS(.v26)]\n")
         for name in ("OmniWM", "omniwmctl", "libOmniWMNowPlaying.dylib"):
             (build / name).touch()
         (build / "OmniWM_OmniWM.bundle").mkdir()
