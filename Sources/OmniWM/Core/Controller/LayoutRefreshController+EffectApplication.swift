@@ -115,6 +115,7 @@ extension LayoutRefreshController {
     private func completeEffectPlan(_ plan: EffectPlan, controller: WMController) {
         if plan.effects.markInitialRefreshComplete {
             layoutState.hasCompletedInitialRefresh = true
+            StateChangeWaiters.shared.signal()
         }
 
         if plan.effects.drainDeferredCreatedWindows {

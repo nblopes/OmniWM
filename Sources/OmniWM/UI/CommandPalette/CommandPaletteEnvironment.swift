@@ -113,15 +113,7 @@ struct CommandPaletteEnvironment {
         FileSearchEngine.shared.stop()
     }
 
-    var runningApplicationForResult: (LauncherApplicationResult) -> pid_t? = { result in
-        let applications = NSWorkspace.shared.runningApplications
-        let bundleURL = result.bundleURL.standardizedFileURL
-        if let exact = applications.first(where: { $0.bundleURL?.standardizedFileURL == bundleURL }) {
-            return exact.processIdentifier
-        }
-        guard let bundleIdentifier = result.bundleIdentifier else { return nil }
-        return applications.first(where: { $0.bundleIdentifier == bundleIdentifier })?.processIdentifier
-    }
+    var runningApplicationForResult: (LauncherApplicationResult) -> pid_t? = { $0.runningProcessIdentifier }
 
     var mostRecentWindowForPID: (WMController, pid_t) -> WindowHandle? = { controller, pid in
         controller.workspaceManager.mostRecentlyFocusedHandle(forPid: pid)

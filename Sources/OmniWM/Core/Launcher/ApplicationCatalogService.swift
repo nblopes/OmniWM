@@ -14,6 +14,17 @@ final class ApplicationCatalogService {
     var onCatalogChanged: (@MainActor () -> Void)?
     private(set) var chips: [LauncherChip] = []
 
+    func applications(
+        where isIncluded: (LauncherApplicationResult) -> Bool,
+        limit: Int
+    ) -> [LauncherApplicationResult] {
+        Array(entries.lazy.map(\.result).filter(isIncluded).prefix(limit))
+    }
+
+    func application(id: String) -> LauncherApplicationResult? {
+        entries.first { $0.result.id == id }?.result
+    }
+
     private var sources: [ApplicationCatalogSource]?
     private var entries: [ApplicationCatalogEntry] = []
     private var isRefreshing = false
@@ -124,19 +135,7 @@ final class ApplicationCatalogService {
         publish: @escaping @MainActor (Int, [LauncherSection<LauncherApplicationResult>]) -> Void
     ) {
         let serial = rankingSerial.wrappingAdd(1, ordering: .acquiringAndReleasing).newValue
-        let filtered: [ApplicationCatalogEntry]
-        if case let .applicationCategory(category)? = chip?.filter {
-            filtered = entries.filter { $0.category == category }
-        } else {
-            filtered = entries
-        }
-        let candidates = filtered.map { entry in
-            var candidate = entry.candidate
-            let launches = launchesFor(entry.result.id)
-            candidate.engagement.inSpotlightDates.append(contentsOf: launches.map(\.date))
-            candidate.engagement.inSpotlightQueries.append(contentsOf: launches.map(\.foldedQuery))
-            return RankingInput(result: entry.result, candidate: candidate)
-        }
+        let candidates = rankingInputs(chip: chip, launchesFor: launchesFor)
         rankingQueue.async { [self] in
             let isCurrent: @Sendable () -> Bool = { self.rankingSerial.load(ordering: .acquiring) == serial }
             guard isCurrent() else { return }
@@ -157,6 +156,45 @@ final class ApplicationCatalogService {
         }
     }
 
+    func bestMatch(
+        for query: String,
+        language: String,
+        shortcutTarget: String?,
+        launchesFor: (String) -> [LauncherLaunch]
+    ) async -> LauncherApplicationResult? {
+        let candidates = rankingInputs(chip: nil, launchesFor: launchesFor)
+        return await withCheckedContinuation { continuation in
+            rankingQueue.async {
+                continuation.resume(returning: Self.rank(
+                    candidates,
+                    query: query,
+                    language: language,
+                    shortcutTarget: shortcutTarget,
+                    shouldCancel: { false }
+                ).first)
+            }
+        }
+    }
+
+    private func rankingInputs(
+        chip: LauncherChip?,
+        launchesFor: (String) -> [LauncherLaunch]
+    ) -> [RankingInput] {
+        let filtered: [ApplicationCatalogEntry]
+        if case let .applicationCategory(category)? = chip?.filter {
+            filtered = entries.filter { $0.category == category }
+        } else {
+            filtered = entries
+        }
+        return filtered.map { entry in
+            var candidate = entry.candidate
+            let launches = launchesFor(entry.result.id)
+            candidate.engagement.inSpotlightDates.append(contentsOf: launches.map(\.date))
+            candidate.engagement.inSpotlightQueries.append(contentsOf: launches.map(\.foldedQuery))
+            return RankingInput(result: entry.result, candidate: candidate)
+        }
+    }
+
     func cancelRanking() {
         _ = rankingSerial.wrappingAdd(1, ordering: .acquiringAndReleasing)
     }
@@ -173,6 +211,7 @@ final class ApplicationCatalogService {
             return
         }
         hasLoadedCatalog = true
+        StateChangeWaiters.shared.signal()
         let changed = self.sources != sources
         self.sources = sources
         self.fingerprint = fingerprint

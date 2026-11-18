@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 // Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
+import AppKit
 import Foundation
 
 enum LauncherViewStyle: String, Codable, Sendable {
@@ -90,6 +91,41 @@ struct LauncherApplicationResult: Identifiable, Sendable {
         self.displayName = displayName
         self.categoryName = categoryName
         self.recordSequence = recordSequence
+    }
+}
+
+struct RunningApplications {
+    let byURL: [URL: pid_t]
+    let byIdentifier: [String: pid_t]
+
+    static var current: RunningApplications {
+        RunningApplications(NSWorkspace.shared.runningApplications)
+    }
+
+    func processIdentifier(for result: LauncherApplicationResult) -> pid_t? {
+        byURL[result.bundleURL.standardizedFileURL] ?? result.bundleIdentifier.flatMap { byIdentifier[$0] }
+    }
+}
+
+extension RunningApplications {
+    init(_ applications: [NSRunningApplication]) {
+        self.init(
+            byURL: Dictionary(
+                applications
+                    .compactMap { app in app.bundleURL.map { ($0.standardizedFileURL, app.processIdentifier) } },
+                uniquingKeysWith: { first, _ in first }
+            ),
+            byIdentifier: Dictionary(
+                applications.compactMap { app in app.bundleIdentifier.map { ($0, app.processIdentifier) } },
+                uniquingKeysWith: { first, _ in first }
+            )
+        )
+    }
+}
+
+extension LauncherApplicationResult {
+    var runningProcessIdentifier: pid_t? {
+        RunningApplications.current.processIdentifier(for: self)
     }
 }
 

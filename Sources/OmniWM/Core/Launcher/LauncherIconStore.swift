@@ -30,6 +30,7 @@ final class LauncherIconStore {
     @ObservationIgnored private var applicationBoxes: [Key: ImageBox] = [:]
     @ObservationIgnored private var fileBoxes: [Key: ImageBox] = [:]
     @ObservationIgnored private var pendingApplicationIcons: Set<Key> = []
+    @ObservationIgnored private var applicationIconPNGs: [URL: Data] = [:]
     @ObservationIgnored private var fileTasks: [Key: Task<Void, Never>] = [:]
     @ObservationIgnored private var fileRequests: [Key: QLThumbnailGenerator.Request] = [:]
     @ObservationIgnored private var fileOrder: [Key] = []
@@ -64,6 +65,24 @@ final class LauncherIconStore {
                 }
             }
         }
+    }
+
+    func applicationIconPNGs(at urls: [URL], points: CGFloat, scale: CGFloat) async -> [URL: Data] {
+        let missing = Set(urls).subtracting(applicationIconPNGs.keys)
+        if !missing.isEmpty {
+            let generation = cacheGeneration
+            let rendered = await withCheckedContinuation { continuation in
+                renderQueue.async {
+                    continuation.resume(returning: missing.reduce(into: [URL: Data]()) { icons, url in
+                        guard let image = omniwm_launcher_create_icon(url as CFURL, points, scale) else { return }
+                        icons[url] = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])
+                    })
+                }
+            }
+            guard cacheGeneration == generation else { return rendered }
+            applicationIconPNGs.merge(rendered) { _, new in new }
+        }
+        return urls.reduce(into: [URL: Data]()) { icons, url in icons[url] = applicationIconPNGs[url] }
     }
 
     func loadFileThumbnail(for item: LauncherFileResult, points: CGFloat, scale: CGFloat) {
@@ -111,6 +130,7 @@ final class LauncherIconStore {
         cacheGeneration &+= 1
         cancelAllFileThumbnails()
         pendingApplicationIcons.removeAll()
+        applicationIconPNGs.removeAll()
         applicationBoxes.removeAll()
         fileBoxes.removeAll()
         fileOrder.removeAll()
